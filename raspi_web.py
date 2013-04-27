@@ -10,6 +10,7 @@ import subprocess
 from pprint import pprint
 from optparse import OptionParser
 from ConfigParser import ConfigParser
+from sunrise import SunRise
 #
 
 global cfg_file
@@ -246,6 +247,12 @@ class Dashboard(object):
                     continue
                 if form[key] != self.gpio_pins[form.gpio][key]:
                     self.change_cfg(form.gpio, key, form[key])
+            # Wenn Sonnensteuerung gewollt ist,
+            # dann stellen wir schon mal die Zeit von heute ein
+            if form.modus == "sonne":
+                sun = SunRise()
+                untergang = sun.sunset().strftime("%H:%M")
+                self.change_cfg(form.gpio, 'zeit_an', untergang)
         if form.send == "flip":
             self.wechsel(form.gpio)
         raise web.redirect('/')
