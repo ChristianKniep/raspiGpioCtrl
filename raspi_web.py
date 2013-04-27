@@ -4,10 +4,8 @@
 # Bibliotheken laden
 import re
 import os
-import sys
 import web
-import subprocess
-from pprint import pprint
+import datetime
 from optparse import OptionParser
 from ConfigParser import ConfigParser
 from sunrise import SunRise
@@ -119,6 +117,7 @@ class WebServer(object):
                 filed = open(cfg_file, "wb")
                 config.write(filed)
                 filed.close()
+                
 
 def lese_config():
     """ Lese Config ein
@@ -135,11 +134,18 @@ def lese_config():
 class Dashboard(object):
     """ Klasse um GPIO-Pins auf Webseite zu stellen und aenderbar zu machen
     """
+    # Da dies beim ersten Einlesen der Datei angelegt wird, ist
+    # eine evtl neu angelegte Config noch nicht existent.
+    # ist halt ein Klassen und kein Instanzen-Objekt. FWIW!
     gpio_pins = lese_config()
     
     def GET(self, gpio):
         """ HTML response
         """
+        if self.gpio_pins == {}:
+            # if it's empty then we just created it
+            self.gpio_pins = lese_config()
+            
         self.gpio_path = "/sys/class/gpio"
         # Anfang der HTML Seite
         self.html = """
@@ -251,8 +257,17 @@ class Dashboard(object):
             # dann stellen wir schon mal die Zeit von heute ein
             if form.modus == "sonne":
                 sun = SunRise()
-                untergang = sun.sunset().strftime("%H:%M")
-                self.change_cfg(form.gpio, 'zeit_an', untergang)
+                untergang = sun.sunset()
+                now = datetime.datetime.now()
+                temp_zeit = datetime.datetime(year=now.year,
+                                month=now.month,
+                                day=now.day,
+                                hour=untergang.hour,
+                                minute=untergang.minute)
+                offset = datetime.timedelta(0,minutes=int(form.sun_delay))
+                neue_zeit = temp_zeit + offset
+                self.change_cfg(form.gpio, 'zeit_an',
+                                neue_zeit.strftime("%H:%M"))
         if form.send == "flip":
             self.wechsel(form.gpio)
         raise web.redirect('/')
