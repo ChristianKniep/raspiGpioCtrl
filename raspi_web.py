@@ -5,6 +5,7 @@
 import re
 import os
 import web
+import sys
 import datetime
 from optparse import OptionParser
 from ConfigParser import ConfigParser
@@ -28,31 +29,53 @@ class Parameter(object):
         """ Default-Options """
         self.parser.add_option("-d", dest="debug",
             default=0, action="count", help="Erhoehe Debug-Level (-d:1, -ddd:3")
-        (self.options, args) = self.parser.parse_args()
+        self.parser.add_option("-w", dest="run_webserver",
+            default=False, action="store_true",
+            help="Spawn (not yet) webserver")
+        self.parser.add_option("-j", dest="run_cronjob",
+            default=False, action="store_true", help="Run cronjob and exit")
+        self.parser.add_option("-p", dest="web_port",
+            default="8080", action="store", help="Webserver port (def:%default)")
         
         # copy over all class.attributes
-        self.args = args
+        (self.options, self.args) = self.parser.parse_args()
+        del_argv = []
+        for cnt in range(len(sys.argv)):
+            if sys.argv[cnt] in ("-w", "-p"):
+                del_argv.append(sys.argv[cnt])
+        for arg in del_argv:
+            sys.argv.remove(arg)
+        # 
+        sys.argv.append(self.get("web_port"))
 
     def get(self, name):
         """ return option value """
-        if self.has_key(name):
-            return self.__dict__[name]
+        if name in self.options.__dict__.keys():
+            return self.options.__dict__[name]
         else:
-            return None
-
-    def has_key(self, name):
-        """ checks whether an option exists or not """
-        return name in self.__dict__.keys()
+            raise IOError(("Option '%s' not found" % name))
 
 
-class WebServer(object):
+class GpioCtrl(object):
     """ webpy server
     """
-    def __init__(self, opt):
-        self.opt = opt
+    def __init__(self):
+        self.config()
+        self.gpio_path = "/sys/class/gpio"
+
+    def run_webserver(self):
+        """ bringt die Sache ans Laufen
+        """
         self.urls = (
             "/(.*)", "Dashboard",
             )
+        app = web.application(self.urls, globals())
+        app.run()
+    
+    def config(self):
+        """ Lese Config ein
+        """
+        # default values
         self.gpio_pins = {
             #pin:{
             #  wo:<Sprechender Name>
@@ -92,17 +115,6 @@ class WebServer(object):
                 'status':0,
              },
         }
-
-    def run(self):
-        """ bringt die Sache ans Laufen
-        """
-        self.config()
-        app = web.application(self.urls, globals())
-        app.run()
-    
-    def config(self):
-        """ Lese Config ein
-        """
         config = ConfigParser()
         config.read(cfg_file)
         for gpio in self.gpio_pins.keys():
@@ -119,18 +131,59 @@ class WebServer(object):
                 config.write(filed)
                 filed.close()
 
+    def run_cronjob(self):
+        """ runs a cronjob to update the sunset-times and
+            flips the pins if needed
+        """
+        pass
 
-def lese_config():
-    """ Lese Config ein
-    """
-    config = ConfigParser()
-    config.read(cfg_file)
-    gpio_pins = {}
-    for gpio in config.sections():
-        gpio_pins[gpio] = {}
-        for option in config.options(gpio):
-            gpio_pins[gpio][option] = config.get(gpio, option)
-    return gpio_pins
+    @staticmethod
+    def lese_config():
+        """ Lese Config ein
+        """
+        config = ConfigParser()
+        config.read(cfg_file)
+        gpio_pins = {}
+        for gpio in config.sections():
+            gpio_pins[gpio] = {}
+            for option in config.options(gpio):
+                gpio_pins[gpio][option] = config.get(gpio, option)
+        return gpio_pins
+
+    def init_gpio(self, gpio):
+        """ Initiere gpio-pin
+        """
+        reg = "gpio(\d+)"
+        mat = re.match(reg, gpio)
+        assert mat, "gpiopin '%s' ist nicht koscher!" % gpio
+        gpio_nr =  mat.group(1)
+        pfad = "%s/export" % (self.gpio_path)
+        os.system("echo %s > %s" % (gpio_nr, pfad))
+        pfad = "%s/%s/direction" % (self.gpio_path, gpio)
+        os.system("echo out > %s" % (pfad))
+        pfad = "%s/%s/value" % (self.gpio_path, gpio)
+        os.system("echo 0 > %s" % (pfad))
+    
+    @staticmethod
+    def schalten(wert, gpiopin):
+        """ Schaltet pin gpiopin auf wert 
+        """ 
+        assert (wert == 0) or (wert == 1), \
+                " Ungueltiger Wert, Wert muss 0 (aus) oder 1 (ein) sein!"
+        cmd = "echo %s > /sys/class/gpio/%s/value" % (wert, gpiopin)
+        os.system(cmd)
+
+    def wechsel(self, gpiopin):
+        """ liest gpiopin aus und wechselt den Zustand
+        """
+        fobj = open("/sys/class/gpio/%s/value" % gpiopin, "r")
+        wert = fobj.read().strip()
+        fobj.close()
+        assert int(wert) in [0, 1], "Wertebereich verlassen '%s'" % wert
+        if int(wert) == 1:
+            self.schalten(0, gpiopin)
+        else:
+            self.schalten(1, gpiopin)
 
 
 class Dashboard(object):
@@ -139,7 +192,8 @@ class Dashboard(object):
     # Da dies beim ersten Einlesen der Datei angelegt wird, ist
     # eine evtl neu angelegte Config noch nicht existent.
     # ist halt ein Klassen und kein Instanzen-Objekt. FWIW!
-    gpio_pins = lese_config()
+    gpio_ctrl = GpioCtrl()
+    gpio_pins = gpio_ctrl.lese_config()
     
     def GET(self, gpio):
         """ HTML response
@@ -148,7 +202,6 @@ class Dashboard(object):
             # if it's empty then we just created it
             self.gpio_pins = lese_config()
             
-        self.gpio_path = "/sys/class/gpio"
         # Anfang der HTML Seite
         self.html = """
         <html><head>
@@ -221,7 +274,7 @@ class Dashboard(object):
         for gpio in self.gpio_pins.keys():
             pfad = "%s/%s/value" % (self.gpio_path, gpio)
             if not os.path.exists(pfad):
-                self.init_gpio(gpio)
+                self.gpio_ctrl.init_gpio(gpio)
             else:
                 fobj = open("/sys/class/gpio/%s/value" % gpio, "r")
                 self.gpio_pins[gpio]['status'] = fobj.read().strip()
@@ -229,20 +282,6 @@ class Dashboard(object):
             self.create_row(gpio)
     
 
-    def init_gpio(self, gpio):
-        """ Initiere gpio-pin
-        """
-        reg = "gpio(\d+)"
-        mat = re.match(reg, gpio)
-        assert mat, "gpiopin '%s' ist nicht koscher!" % gpio
-        gpio_nr =  mat.group(1)
-        pfad = "%s/export" % (self.gpio_path)
-        os.system("echo %s > %s" % (gpio_nr, pfad))
-        pfad = "%s/%s/direction" % (self.gpio_path, gpio)
-        os.system("echo out > %s" % (pfad))
-        pfad = "%s/%s/value" % (self.gpio_path, gpio)
-        os.system("echo 0 > %s" % (pfad))
-    
  
     def change_cfg(self, gpio, key, val):
         """ Update cfg und gpio_pins
@@ -294,26 +333,7 @@ class Dashboard(object):
             self.wechsel(form.gpio)
         raise web.redirect('/')
     
-    def wechsel(self, gpiopin):
-        """ liest gpiopin aus und wechselt den Zustand
-        """
-        fobj = open("/sys/class/gpio/%s/value" % gpiopin, "r")
-        wert = fobj.read().strip()
-        fobj.close()
-        assert int(wert) in [0, 1], "Wertebereich verlassen '%s'" % wert
-        if int(wert) == 1:
-            self.schalten(0, gpiopin)
-        else:
-            self.schalten(1, gpiopin)
     
-    @staticmethod
-    def schalten(wert, gpiopin):
-        """ Schaltet pin gpiopin auf wert 
-        """ 
-        assert (wert == 0) or (wert == 1), \
-                " Ungueltiger Wert, Wert muss 0 (aus) oder 1 (ein) sein!"
-        cmd = "echo %s > /sys/class/gpio/%s/value" % (wert, gpiopin)
-        os.system(cmd)
 
 
 def main():
@@ -321,8 +341,13 @@ def main():
     # Parameter
     options = Parameter()
     
-    srv = WebServer(options)
-    srv.run()
+    srv = GpioCtrl()
+    if options.get("run_webserver"):
+        print "run webserver"
+        srv.run_webserver()
+    elif options.get("run_cronjob"):
+        srv.run_cronjob()
+        
 
 # ein Aufruf von main() ganz unten
 if __name__ == "__main__":
