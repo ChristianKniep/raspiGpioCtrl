@@ -71,6 +71,7 @@ class WebServer(object):
                 'dauer':"30",
                 'sun_delay':'10',
                 'status':0,
+                'tage':'Mo,Di,Mi,Do,Fr, Sa, So',
              },
              'gpio17':{
                 'wo':'Mitte',
@@ -117,7 +118,7 @@ class WebServer(object):
                 filed = open(cfg_file, "wb")
                 config.write(filed)
                 filed.close()
-                
+
 
 def lese_config():
     """ Lese Config ein
@@ -130,6 +131,7 @@ def lese_config():
         for option in config.options(gpio):
             gpio_pins[gpio][option] = config.get(gpio, option)
     return gpio_pins
+
 
 class Dashboard(object):
     """ Klasse um GPIO-Pins auf Webseite zu stellen und aenderbar zu machen
@@ -157,6 +159,7 @@ class Dashboard(object):
                 <td>Status</td>
                 <td>Modus</td>
                 <td>An um</td>
+                <td>Wochentage</td>
                 <td>Dauer</td>
                 <td>Sonnenverzoegerung</td>
             </tr>
@@ -195,6 +198,15 @@ class Dashboard(object):
                 </td>"""
         self.html += """
                 <td><input type="text" name="zeit_an" value="%(zeit_an)s" size="6">Uhr</td>
+                <td>""" % self.gpio_pins[gpio]
+        for tag in ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']:
+            checked = ""
+            if 'tage' in self.gpio_pins[gpio].keys() and \
+               re.match(".*%s.*" % tag, self.gpio_pins[gpio]['tage']):
+                checked = " checked"
+            self.html += "<input type='checkbox' name='tag_%s' value='%s'%s>%s" % (tag, tag, checked, tag)
+        self.html += "</td>"
+        self.html += """
                 <td><input type="text" name="dauer" value="%(dauer)s" size="5">min</td>
                 <td><input type="text" name="sun_delay" value="%(sun_delay)s" size="5">min</td>
                 <td><input name="send" type="submit" value="aendern"></td>
@@ -248,11 +260,21 @@ class Dashboard(object):
         """
         form =  web.input()
         if form.send == "aendern":
-            for key in form.keys():
+            tage = []
+            reg_tage = re.compile("tag_(.*)")
+            for key, val in form.items():
                 if key in ('send', 'gpio'):
+                    continue
+                mat_tage = re.match(reg_tage, key)
+                if mat_tage:
+                    tag = mat_tage.group(1)
+                    tage.append(tag)
                     continue
                 if form[key] != self.gpio_pins[form.gpio][key]:
                     self.change_cfg(form.gpio, key, form[key])
+            if 'tage' not in self.gpio_pins[form.gpio].keys() or \
+               ",".join(tage) != self.gpio_pins[form.gpio]['tage']:
+                self.change_cfg(form.gpio, 'tage', ",".join(tage))
             # Wenn Sonnensteuerung gewollt ist,
             # dann stellen wir schon mal die Zeit von heute ein
             if form.modus == "sonne":
@@ -293,13 +315,14 @@ class Dashboard(object):
         cmd = "echo %s > /sys/class/gpio/%s/value" % (wert, gpiopin)
         os.system(cmd)
 
+
 def main():
     """ main function """
     # Parameter
     options = Parameter()
     
-    ws = WebServer(options)
-    ws.run()
+    srv = WebServer(options)
+    srv.run()
 
 # ein Aufruf von main() ganz unten
 if __name__ == "__main__":
