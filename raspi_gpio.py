@@ -118,6 +118,15 @@ class GpioCtrl(object):
                 'sun_delay':'10',
                 'status':0,
              },
+             'gpio25':{
+                'wo':'Relaykasten',
+                'modus':'manuell',
+                'prio':'0',
+                'zeit_an':"18:00",
+                'dauer':"30",
+                'sun_delay':'10',
+                'status':1,
+             },
         }
         config = ConfigParser()
         config.read(cfg_file)
@@ -277,6 +286,10 @@ class GpioCtrl(object):
         """
         fobj = open("/sys/class/gpio/%s/value" % gpiopin, "r")
         new_state = fobj.read().strip()
+        # Ugly quick fix, should be fixed in a better way
+        if gpiopin not in self.gpio_pins.keys():
+            self.gpio_pins[gpiopin] = {}
+            self.gpio_pins[gpiopin]['status'] = 0
         if self.gpio_pins[gpiopin]['status'] != new_state:
             self.gpio_pins[gpiopin]['status'] = new_state
             self.change_cfg(gpiopin, 'status', new_state)
@@ -396,6 +409,7 @@ class Dashboard(object):
         """ Behandle formular
         """
         self.gpio_pins = self.gpio_ctrl.lese_config()
+        self.gpio_ctrl.read_init_pins()
         form =  web.input()
         if form.send == "aendern":
             tage = []
