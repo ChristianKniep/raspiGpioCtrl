@@ -7,13 +7,14 @@ import os
 import web
 import sys
 import datetime
+import time
 from optparse import OptionParser
 from ConfigParser import ConfigParser
 from sunrise import SunRise
 #
 
 global cfg_file
-cfg_file = "/root/example.cfg"
+cfg_file = "gpio_gpio.cfg"
 
 class Parameter(object):
     """ parameter object """
@@ -32,6 +33,9 @@ class Parameter(object):
         self.parser.add_option("-w", dest="run_webserver",
             default=False, action="store_true",
             help="Spawn (not yet) webserver")
+        self.parser.add_option("--dry-run", dest="dry_run",
+            default=False, action="store_true",
+            help="dry run on !raspi creating gpio-path in `pwd`")
         self.parser.add_option("-j", dest="run_cronjob",
             default=False, action="store_true", help="Run cronjob and exit")
         self.parser.add_option("-p", dest="web_port",
@@ -44,7 +48,7 @@ class Parameter(object):
         # options sys.argv has to be altered. Kind of ugly, but ...
         del_argv = []
         for cnt in range(len(sys.argv)):
-            if sys.argv[cnt] in ("-w", "-p"):
+            if sys.argv[cnt] in ("-w", "-p", "--dry-run", "-j"):
                 del_argv.append(sys.argv[cnt])
         for arg in del_argv:
             sys.argv.remove(arg)
@@ -58,13 +62,20 @@ class Parameter(object):
         else:
             raise IOError(("Option '%s' not found" % name))
 
+global options
+options = Parameter()
+
 
 class GpioCtrl(object):
     """ webpy server
     """
-    def __init__(self):
+    def __init__(self, opt):
+        self.opt = opt
         self.config()
-        self.gpio_path = "/sys/class/gpio"
+        if self.opt.get("dry_run"):
+            self.gpio_path = "."
+        else:
+            self.gpio_path = "/sys/class/gpio"
         self.sun = SunRise()
 
     def run_webserver(self):
@@ -98,7 +109,7 @@ class GpioCtrl(object):
                 'dauer':"30",
                 'sun_delay':'10',
                 'status':0,
-                'tage':'Mo,Di,Mi,Do,Fr, Sa, So',
+                'dow':'Mo,Tu,We,Thu,Fr,Sa,Sun',
              },
              'gpio17':{
                 'wo':'Mitte',
@@ -152,7 +163,6 @@ class GpioCtrl(object):
                 self.init_gpio(gpio)
             else:
                 self.read_gpiopin(gpio)
-                
 
     def now_gt(self, clock):
         """ Checks whether the current time is greater then the given
@@ -189,9 +199,17 @@ class GpioCtrl(object):
                 self.set_sunset(gpio)
             # Now we check if there is something to do
             now = datetime.datetime.now()
+            dow = time.strftime("%a")
+            dow_go = True
+            if 'dow' in self.gpio_pins[gpio].keys() and \
+                        self.gpio_pins[gpio]['dow'] != "":
+                dow_set = self.gpio_pins[gpio]['dow'].split(",")
+                print dow, dow_set
+                if dow not in dow_set:
+                    dow_go = False
             gpio_on = self.get_dt_on(gpio)
             gpio_off = self.get_dt_off(gpio)
-            if gpio_on <= now <= gpio_off:
+            if dow_go and gpio_on <= now <= gpio_off:
                 if int(self.gpio_pins[gpio]['status']) != 1:
                     print self.gpio_pins[gpio]['status']
                     print "flip! %s" % gpio
@@ -265,26 +283,32 @@ class GpioCtrl(object):
         mat = re.match(reg, gpio)
         assert mat, "gpiopin '%s' ist nicht koscher!" % gpio
         gpio_nr =  mat.group(1)
-        pfad = "%s/export" % (self.gpio_path)
-        os.system("echo %s > %s" % (gpio_nr, pfad))
-        pfad = "%s/%s/direction" % (self.gpio_path, gpio)
-        os.system("echo out > %s" % (pfad))
-        pfad = "%s/%s/value" % (self.gpio_path, gpio)
-        os.system("echo 0 > %s" % (pfad))
+        if not self.opt.get("dry_run"):
+            pfad = "%s/export" % (self.gpio_path)
+            os.system("echo %s > %s" % (gpio_nr, pfad))
+            pfad = "%s/%s/direction" % (self.gpio_path, gpio)
+            os.system("echo out > %s" % (pfad))
+            pfad = "%s/%s/value" % (self.gpio_path, gpio)
+            os.system("echo 0 > %s" % (pfad))
+        else:
+            pfad = "%s/%s" % (self.gpio_path, gpio)
+            os.system("mkdir %s" % pfad)
+            pfad = "%s/%s/value" % (self.gpio_path, gpio)
+            os.system("echo 0 > %s" % (pfad))
     
     def schalten(self, wert, gpiopin):
         """ Schaltet pin gpiopin auf wert 
         """ 
         assert (wert == 0) or (wert == 1), \
                 " Ungueltiger Wert, Wert muss 0 (aus) oder 1 (ein) sein!"
-        cmd = "echo %s > /sys/class/gpio/%s/value" % (wert, gpiopin)
+        cmd = "echo %s > %s/%s/value" % (wert, self.gpio_path, gpiopin)
         os.system(cmd)
         self.read_gpiopin(gpiopin)
     
     def read_gpiopin(self, gpiopin):
         """ read current status and updates gpio_pins dictonary
         """
-        fobj = open("/sys/class/gpio/%s/value" % gpiopin, "r")
+        fobj = open("%s/%s/value" % (self.gpio_path, gpiopin), "r")
         new_state = fobj.read().strip()
         # Ugly quick fix, should be fixed in a better way
         if gpiopin not in self.gpio_pins.keys():
@@ -299,7 +323,7 @@ class GpioCtrl(object):
     def wechsel(self, gpiopin):
         """ liest gpiopin aus und wechselt den Zustand
         """
-        fobj = open("/sys/class/gpio/%s/value" % gpiopin, "r")
+        fobj = open("%s/%s/value" % (self.gpio_path, gpiopin), "r")
         wert = fobj.read().strip()
         fobj.close()
         assert int(wert) in [0, 1], "Wertebereich verlassen '%s'" % wert
@@ -318,7 +342,6 @@ class GpioCtrl(object):
         filed = open(cfg_file, "wb")
         config.write(filed)
         filed.close()
- 
 
 
 class Dashboard(object):
@@ -327,7 +350,7 @@ class Dashboard(object):
     # Da dies beim ersten Einlesen der Datei angelegt wird, ist
     # eine evtl neu angelegte Config noch nicht existent.
     # ist halt ein Klassen und kein Instanzen-Objekt. FWIW!
-    gpio_ctrl = GpioCtrl()
+    gpio_ctrl = GpioCtrl(options)
     
     def GET(self, gpio):
         """ HTML response
@@ -385,10 +408,10 @@ class Dashboard(object):
         self.html += """
                 <td><input type="text" name="zeit_an" value="%(zeit_an)s" size="6">Uhr</td>
                 <td>""" % self.gpio_pins[gpio]
-        for tag in ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']:
+        for tag in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']:
             checked = ""
-            if 'tage' in self.gpio_pins[gpio].keys() and \
-               re.match(".*%s.*" % tag, self.gpio_pins[gpio]['tage']):
+            if 'dow' in self.gpio_pins[gpio].keys() and \
+               re.match(".*%s.*" % tag, self.gpio_pins[gpio]['dow']):
                 checked = " checked"
             self.html += "<input type='checkbox' name='tag_%s' value='%s'%s>%s" % (tag, tag, checked, tag)
         self.html += "</td>"
@@ -412,21 +435,21 @@ class Dashboard(object):
         self.gpio_ctrl.read_init_pins()
         form =  web.input()
         if form.send == "aendern":
-            tage = []
-            reg_tage = re.compile("tag_(.*)")
+            dow = []
+            reg_dow = re.compile("tag_(.*)")
             for key, val in form.items():
                 if key in ('send', 'gpio'):
                     continue
-                mat_tage = re.match(reg_tage, key)
-                if mat_tage:
-                    tag = mat_tage.group(1)
-                    tage.append(tag)
+                mat_dow = re.match(reg_dow, key)
+                if mat_dow:
+                    tag = mat_dow.group(1)
+                    dow.append(tag)
                     continue
                 if form[key] != self.gpio_pins[form.gpio][key]:
                     self.gpio_ctrl.change_cfg(form.gpio, key, form[key])
-            if 'tage' not in self.gpio_pins[form.gpio].keys() or \
-               ",".join(tage) != self.gpio_pins[form.gpio]['tage']:
-                self.gpio_ctrl.change_cfg(form.gpio, 'tage', ",".join(tage))
+            if 'dow' not in self.gpio_pins[form.gpio].keys() or \
+               ",".join(dow) != self.gpio_pins[form.gpio]['dow']:
+                self.gpio_ctrl.change_cfg(form.gpio, 'dow', ",".join(dow))
             # Wenn Sonnensteuerung gewollt ist,
             # dann stellen wir schon mal die Zeit von heute ein
             if form.modus == "sonne":
@@ -436,16 +459,12 @@ class Dashboard(object):
             self.gpio_ctrl.wechsel(form.gpio)
             self.gpio_ctrl.change_cfg(form.gpio, 'modus', "manuell")
         raise web.redirect('/')
-    
-    
 
 
 def main():
     """ main function """
     # Parameter
-    options = Parameter()
-    
-    srv = GpioCtrl()
+    srv = GpioCtrl(options)
     if options.get("run_webserver"):
         srv.run_webserver()
     elif options.get("run_cronjob"):
