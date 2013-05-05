@@ -14,7 +14,7 @@ from sunrise import SunRise
 #
 
 global cfg_file
-cfg_file = "gpio_gpio.cfg"
+cfg_file = "raspi_gpio.cfg"
 
 class Parameter(object):
     """ parameter object """
@@ -36,6 +36,9 @@ class Parameter(object):
         self.parser.add_option("--dry-run", dest="dry_run",
             default=False, action="store_true",
             help="dry run on !raspi creating gpio-path in `pwd`")
+        self.parser.add_option("-c", dest="create_cfg",
+            default=False, action="store_true",
+            help="create config 'raspi_gpio.cfg' with example setup")
         self.parser.add_option("-j", dest="run_cronjob",
             default=False, action="store_true", help="Run cronjob and exit")
         self.parser.add_option("-p", dest="web_port",
@@ -48,7 +51,7 @@ class Parameter(object):
         # options sys.argv has to be altered. Kind of ugly, but ...
         del_argv = []
         for cnt in range(len(sys.argv)):
-            if sys.argv[cnt] in ("-w", "-p", "--dry-run", "-j"):
+            if sys.argv[cnt] in ("-w", "-p", "--dry-run", "-j", "-c"):
                 del_argv.append(sys.argv[cnt])
         for arg in del_argv:
             sys.argv.remove(arg)
@@ -71,11 +74,34 @@ class GpioCtrl(object):
     """
     def __init__(self, opt):
         self.opt = opt
-        self.config()
+        self.gpio_pins = {
+            #pin:{
+            #  id:<one/two word name>
+            #  mode:time, sun, man
+            #  prio:if overlaping happens this should order the run(not implemented)
+            #  on:when to switch on
+            #  duration:<runtime in minutes>
+            #  sun_delay=offset to sunset (negative value is possible)
+            #  state:0/1 (will be read)
+            #}
+        }
+        self.gpio_test = {
+             'gpio4':{
+                'id':'Front',
+                'mode':'time',
+                'prio':'0',
+                'on':"18:00",
+                'duration':"30",
+                'sun_delay':'10',
+                'state':0,
+                'dow':'Mon,Tue,Wed,Thu,Fr,Sat,Sun',
+             },
+        }
         if self.opt.get("dry_run"):
             self.gpio_path = "."
         else:
             self.gpio_path = "/sys/class/gpio"
+        self.config()
         self.sun = SunRise()
 
     def run_webserver(self):
@@ -91,69 +117,24 @@ class GpioCtrl(object):
         """ Lese Config ein
         """
         # default values
-        self.gpio_pins = {
-            #pin:{
-            #  wo:<Sprechender Name>
-            #  modus:zeit, sonnenstand oder manuell
-            #  prio:wenn Kollision, dann wird nach Prioritaet vorgegangen
-            #  zeit_an:UHRZEIT AN (wird genutzt wenn modus==zeit)
-            #  dauer:Dauer in Minuten
-            #  sun_delay=Minuten nach Sonnenuntergang (kann auch negativ sein)
-            #  status:0/1 (wird eingelesen)
-            #}
-             'gpio4':{
-                'wo':'Vorne',
-                'modus':'zeit',
-                'prio':'0',
-                'zeit_an':"18:00",
-                'dauer':"30",
-                'sun_delay':'10',
-                'status':0,
-                'dow':'Mo,Tu,We,Thu,Fr,Sa,Sun',
-             },
-             'gpio17':{
-                'wo':'Mitte',
-                'modus':'zeit',
-                'prio':'0',
-                'zeit_an':"18:00",
-                'dauer':"30",
-                'sun_delay':'10',
-                'status':0,
-             },
-             'gpio18':{
-                'wo':'Teich',
-                'modus':'zeit',
-                'prio':'0',
-                'zeit_an':"18:00",
-                'dauer':"30",
-                'sun_delay':'10',
-                'status':0,
-             },
-             'gpio25':{
-                'wo':'Relaykasten',
-                'modus':'manuell',
-                'prio':'0',
-                'zeit_an':"18:00",
-                'dauer':"30",
-                'sun_delay':'10',
-                'status':1,
-             },
-        }
         config = ConfigParser()
         config.read(cfg_file)
-        for gpio in self.gpio_pins.keys():
-            if gpio in config.sections():
-                # Wenn es drin ist, dann ueberschreiben wir den default
-                for option in config.options(gpio):
-                    self.gpio_pins[gpio][option] = config.get(gpio, option)
-            else:
-                # Ansonsten legen wir die cfg an
-                config.add_section(gpio)
-                for key, val in self.gpio_pins[gpio].items():
-                    config.set(gpio, key, val)
-                filed = open(cfg_file, "wb")
-                config.write(filed)
-                filed.close()
+        if self.opt.get("create_cfg"):
+            for gpio in self.gpio_test.keys():
+                if gpio not in config.sections():
+                    # Ansonsten legen wir die cfg an
+                    config.add_section(gpio)
+                    for key, val in self.gpio_test[gpio].items():
+                        config.set(gpio, key, val)
+                    filed = open(cfg_file, "wb")
+                    config.write(filed)
+                    filed.close()
+            config.read(cfg_file)
+        for gpio in config.sections():
+            self.gpio_pins[gpio] = {}
+            for option in config.options(gpio):
+                self.gpio_pins[gpio][option] = config.get(gpio, option)
+        self.read_init_pins()
     
     def read_init_pins(self):
         ## init pins
@@ -190,11 +171,11 @@ class GpioCtrl(object):
     def time_trigger(self, gpio):
         """ reacts if the time should trigger something
         """
-        if self.gpio_pins[gpio]['modus'] == 'manuell':
+        if self.gpio_pins[gpio]['mode'] == 'manuell':
             # nothing to be done
             pass 
         else:
-            if self.gpio_pins[gpio]['modus'] == 'sonne':
+            if self.gpio_pins[gpio]['mode'] == 'sonne':
                 # check the sunset-time
                 self.set_sunset(gpio)
             # Now we check if there is something to do
@@ -204,19 +185,18 @@ class GpioCtrl(object):
             if 'dow' in self.gpio_pins[gpio].keys() and \
                         self.gpio_pins[gpio]['dow'] != "":
                 dow_set = self.gpio_pins[gpio]['dow'].split(",")
-                print dow, dow_set
                 if dow not in dow_set:
                     dow_go = False
             gpio_on = self.get_dt_on(gpio)
             gpio_off = self.get_dt_off(gpio)
             if dow_go and gpio_on <= now <= gpio_off:
-                if int(self.gpio_pins[gpio]['status']) != 1:
-                    print self.gpio_pins[gpio]['status']
+                if int(self.gpio_pins[gpio]['state']) != 1:
+                    print self.gpio_pins[gpio]['state']
                     print "flip! %s" % gpio
                     self.wechsel(gpio)
                 print "ON: ", gpio, self.gpio_pins[gpio]
             else:
-                if int(self.gpio_pins[gpio]['status']) == 1:
+                if int(self.gpio_pins[gpio]['state']) == 1:
                     print "flip! %s" % gpio
                     self.wechsel(gpio)
                 print "OFF ", gpio, self.gpio_pins[gpio]
@@ -224,28 +204,28 @@ class GpioCtrl(object):
     def get_dt_on(self, gpio):
         """ returns a datetime instance with the date to switch on
         """
-        (std, minute) = self.gpio_pins[gpio]['zeit_an'].split(":")
+        (std, minute) = self.gpio_pins[gpio]['on'].split(":")
         now = datetime.datetime.now()
-        temp_zeit = datetime.datetime(year=now.year,
+        temp_on = datetime.datetime(year=now.year,
                         month=now.month,
                         day=now.day,
                         hour=int(std),
                         minute=int(minute))
-        return temp_zeit
+        return temp_on
     
     def get_dt_off(self, gpio):
         """ returns a datetime instance with the date to switch on + duration
         """
-        (std, minute) = self.gpio_pins[gpio]['zeit_an'].split(":")
+        (std, minute) = self.gpio_pins[gpio]['on'].split(":")
         now = datetime.datetime.now()
-        temp_zeit = datetime.datetime(year=now.year,
+        temp_on = datetime.datetime(year=now.year,
                         month=now.month,
                         day=now.day,
                         hour=int(std),
                         minute=int(minute))
         offset = datetime.timedelta(0,
-                        minutes=int(self.gpio_pins[gpio]['dauer']))
-        return temp_zeit + offset
+                        minutes=int(self.gpio_pins[gpio]['duration']))
+        return temp_on + offset
     
     def set_sunset(self, gpio):
         """ set the sunset value
@@ -253,15 +233,15 @@ class GpioCtrl(object):
         values = self.gpio_pins[gpio]
         untergang = self.sun.sunset()
         now = datetime.datetime.now()
-        temp_zeit = datetime.datetime(year=now.year,
+        temp_on = datetime.datetime(year=now.year,
                         month=now.month,
                         day=now.day,
                         hour=untergang.hour,
                         minute=untergang.minute)
         offset = datetime.timedelta(0, minutes=int(values['sun_delay']))
-        neue_zeit = temp_zeit + offset
-        self.change_cfg(gpio, 'zeit_an',
-                        neue_zeit.strftime("%H:%M"))
+        neue_on = temp_on + offset
+        self.change_cfg(gpio, 'on',
+                        neue_on.strftime("%H:%M"))
     
     @staticmethod
     def lese_config():
@@ -313,10 +293,10 @@ class GpioCtrl(object):
         # Ugly quick fix, should be fixed in a better way
         if gpiopin not in self.gpio_pins.keys():
             self.gpio_pins[gpiopin] = {}
-            self.gpio_pins[gpiopin]['status'] = 0
-        if self.gpio_pins[gpiopin]['status'] != new_state:
-            self.gpio_pins[gpiopin]['status'] = new_state
-            self.change_cfg(gpiopin, 'status', new_state)
+            self.gpio_pins[gpiopin]['state'] = 0
+        if self.gpio_pins[gpiopin]['state'] != new_state:
+            self.gpio_pins[gpiopin]['state'] = new_state
+            self.change_cfg(gpiopin, 'state', new_state)
         
         fobj.close()
     
@@ -385,40 +365,40 @@ class Dashboard(object):
         self.html += """
             <tr>
             <form method="POST">
-                <td><b>%(wo)s</b></td>""" % self.gpio_pins[gpio]
+                <td><b>%(id)s</b></td>""" % self.gpio_pins[gpio]
         self.html += "<input type='hidden' name='gpio' value='%s'>" % gpio
-        if self.gpio_pins[gpio]['status'] == "0":
-            status_col = 'red'
+        if self.gpio_pins[gpio]['state'] == "0":
+            state_col = 'red'
         else:
-            status_col = 'green'
-        self.html += "<td style='background-color:%s'>" % status_col
+            state_col = 'green'
+        self.html += "<td style='background-color:%s'>" % state_col
         self.html += "<input name='send' type='submit' value='flip'></td>"
         self.html += """
                 <td>"""
-        for modus in ['zeit', 'sonne', 'manuell']:
-            if self.gpio_pins[gpio]['modus'] == modus:
+        for mode in ['time', 'sun', 'man']:
+            if self.gpio_pins[gpio]['mode'] == mode:
                 checked = " checked"
             else:
                 checked = ""
             self.html += """
-                    <input type="radio" name="modus" value="%s"%s>%s""" % \
-                            (modus, checked, modus)
+                    <input type="radio" name="mode" value="%s"%s>%s""" % \
+                            (mode, checked, mode)
         self.html += """
                 </td>"""
         self.html += """
-                <td><input type="text" name="zeit_an" value="%(zeit_an)s" size="6">Uhr</td>
+                <td><input type="text" name="on" value="%(on)s" size="6">o'clock (24h)</td>
                 <td>""" % self.gpio_pins[gpio]
-        for tag in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']:
+        for dow in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']:
             checked = ""
             if 'dow' in self.gpio_pins[gpio].keys() and \
-               re.match(".*%s.*" % tag, self.gpio_pins[gpio]['dow']):
+               re.match(".*%s.*" % dow, self.gpio_pins[gpio]['dow']):
                 checked = " checked"
-            self.html += "<input type='checkbox' name='tag_%s' value='%s'%s>%s" % (tag, tag, checked, tag)
+            self.html += "<input type='checkbox' name='dow_%s' value='%s'%s>%s" % (dow, dow, checked, dow)
         self.html += "</td>"
         self.html += """
-                <td><input type="text" name="dauer" value="%(dauer)s" size="5">min</td>
+                <td><input type="text" name="duration" value="%(duration)s" size="5">min</td>
                 <td><input type="text" name="sun_delay" value="%(sun_delay)s" size="5">min</td>
-                <td><input name="send" type="submit" value="aendern"></td>
+                <td><input name="send" type="submit" value="change"></td>
             </form>
             </tr>""" % self.gpio_pins[gpio] 
     
@@ -427,37 +407,37 @@ class Dashboard(object):
         """
         for gpio in self.gpio_pins.keys():
             self.create_row(gpio)
- 
+    
     def POST(self, gpio):
         """ Behandle formular
         """
         self.gpio_pins = self.gpio_ctrl.lese_config()
         self.gpio_ctrl.read_init_pins()
         form =  web.input()
-        if form.send == "aendern":
-            dow = []
-            reg_dow = re.compile("tag_(.*)")
-            for key, val in form.items():
+        if form.send == "change":
+            dows = []
+            reg_dow = re.compile("dow_(.*)")
+            for key in form.keys():
                 if key in ('send', 'gpio'):
                     continue
                 mat_dow = re.match(reg_dow, key)
                 if mat_dow:
-                    tag = mat_dow.group(1)
-                    dow.append(tag)
+                    dow = mat_dow.group(1)
+                    dows.append(dow)
                     continue
                 if form[key] != self.gpio_pins[form.gpio][key]:
                     self.gpio_ctrl.change_cfg(form.gpio, key, form[key])
             if 'dow' not in self.gpio_pins[form.gpio].keys() or \
-               ",".join(dow) != self.gpio_pins[form.gpio]['dow']:
-                self.gpio_ctrl.change_cfg(form.gpio, 'dow', ",".join(dow))
+               ",".join(dows) != self.gpio_pins[form.gpio]['dow']:
+                self.gpio_ctrl.change_cfg(form.gpio, 'dow', ",".join(dows))
             # Wenn Sonnensteuerung gewollt ist,
             # dann stellen wir schon mal die Zeit von heute ein
-            if form.modus == "sonne":
+            if form.mode == "sun":
                 self.gpio_ctrl.set_sunset(form.gpio)
                 self.gpio_ctrl.time_trigger(form.gpio)
         if form.send == "flip":
             self.gpio_ctrl.wechsel(form.gpio)
-            self.gpio_ctrl.change_cfg(form.gpio, 'modus', "manuell")
+            self.gpio_ctrl.change_cfg(form.gpio, 'mode', "man")
         raise web.redirect('/')
 
 
