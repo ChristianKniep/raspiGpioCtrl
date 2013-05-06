@@ -97,6 +97,9 @@ class GpioCtrl(object):
                 'dow':'Mon,Tue,Wed,Thu,Fr,Sat,Sun',
              },
         }
+        # since the /tmp/ directory is trashed
+        # the webserver is only running once
+        self.lock_dir = "/tmp/raspi_gpio_lockdir"
         if self.opt.get("dry_run"):
             self.gpio_path = "."
         else:
@@ -107,12 +110,26 @@ class GpioCtrl(object):
     def run_webserver(self):
         """ bringt die Sache ans Laufen
         """
-        self.urls = (
-            "/(.*)", "Dashboard",
-            )
-        app = web.application(self.urls, globals())
-        app.run()
-    
+        if self.aquire_lock():
+            self.urls = (
+                "/(.*)", "Dashboard",
+                )
+            app = web.application(self.urls, globals())
+            app.run()
+
+    def aquire_lock(self, force=False):
+        """ try to obtain lock file, return True if ok
+            False otherwise. If forced, renew lock.
+        """
+        if not os.path.exists(self.lock_dir):
+            os.mkdir(self.lock_dir)
+            return True
+        if force:
+            os.remove(self.lock_dir)
+            os.mkdir(self.lock_dir)
+            return True
+        return False
+
     def config(self):
         """ Lese Config ein
         """
@@ -445,10 +462,10 @@ def main():
     """ main function """
     # Parameter
     srv = GpioCtrl(options)
-    if options.get("run_webserver"):
-        srv.run_webserver()
-    elif options.get("run_cronjob"):
+    if options.get("run_cronjob"):
         srv.run_cronjob()
+    elif options.get("run_webserver"):
+        srv.run_webserver()
         
 
 # ein Aufruf von main() ganz unten
