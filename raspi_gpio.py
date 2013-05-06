@@ -14,7 +14,7 @@ from sunrise import SunRise
 #
 
 global cfg_file
-cfg_file = "raspi_gpio.cfg"
+cfg_file = "/etc/raspi_gpio.cfg"
 
 class Parameter(object):
     """ parameter object """
