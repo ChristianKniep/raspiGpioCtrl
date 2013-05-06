@@ -464,7 +464,7 @@ def main():
     srv = GpioCtrl(options)
     if options.get("run_cronjob"):
         srv.run_cronjob()
-    elif options.get("run_webserver"):
+    if options.get("run_webserver"):
         srv.run_webserver()
         
 
