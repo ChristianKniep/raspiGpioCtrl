@@ -188,8 +188,9 @@ class GpioCtrl(object):
     def time_trigger(self, gpio):
         """ reacts if the time should trigger something
         """
-        if self.gpio_pins[gpio]['mode'] == 'manuell':
+        if self.gpio_pins[gpio]['mode'] == 'man':
             # nothing to be done
+            print "man ", self.gpio_pins[gpio]
             pass 
         else:
             if self.gpio_pins[gpio]['mode'] == 'sonne':
@@ -208,7 +209,6 @@ class GpioCtrl(object):
             gpio_off = self.get_dt_off(gpio)
             if dow_go and gpio_on <= now <= gpio_off:
                 if int(self.gpio_pins[gpio]['state']) != 1:
-                    print self.gpio_pins[gpio]['state']
                     print "flip! %s" % gpio
                     self.wechsel(gpio)
                 print "ON: ", gpio, self.gpio_pins[gpio]
