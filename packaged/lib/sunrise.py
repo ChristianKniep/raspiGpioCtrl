@@ -34,7 +34,6 @@ class SunRise:
         """
         if when is None :
             when = datetime.now()
-        print when
         self.__preptime(when)
         self.__calc()
         return SunRise.__timefromdecimalday(self.sunrise_t)
