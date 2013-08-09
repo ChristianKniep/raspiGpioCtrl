@@ -6,7 +6,8 @@ from datetime import date,datetime,time
 """
 Library to calculate the sunset 
 Written by Michel Anders
-http://michelanders.blogspot.fr/2010/12/calulating-sunrise-and-sunset-in-python.html
+http://michelanders.blogspot.fr/2010/12/<br>
+        calulating-sunrise-and-sunset-in-python.html
 """
 
 class SunRise:
@@ -21,11 +22,14 @@ class SunRise:
     s = sun(lat=49,long=3)
     print('sunrise at ',s.sunrise(when=datetime.datetime.now())
     """
-    def __init__(self,lat=52.9,long=10.47): # default Suderburg, Germany
-        self.lat=lat
-        self.long=long
-      
-    def sunrise(self,when=datetime.now()):
+    def __init__(self, lat=52.9, lon=10.47):
+        """
+        Instanciate class, by default set Suderburg, Germany as base
+        """
+        self.lat = lat
+        self.long = lon
+
+    def sunrise(self, when=datetime.now()):
         """
         return the time of sunrise as a datetime.time object
         when is a datetime.datetime object. If none is given
@@ -38,7 +42,7 @@ class SunRise:
         self.__calc()
         return SunRise.__timefromdecimalday(self.sunrise_t)
       
-    def sunset(self,when=None):
+    def sunset(self, when=None):
         if when is None :
             when = datetime.now()
         self.__preptime(when)
