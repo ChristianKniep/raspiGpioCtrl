@@ -10,6 +10,7 @@ http://michelanders.blogspot.fr/2010/12/<br>
         calulating-sunrise-and-sunset-in-python.html
 """
 
+
 class SunRise:
     """ 
     Calculate sunrise and sunset based on equations from NOAA
@@ -22,12 +23,11 @@ class SunRise:
     s = sun(lat=49,long=3)
     print('sunrise at ',s.sunrise(when=datetime.datetime.now())
     """
-    def __init__(self, lat=52.9, lon=10.47):
+    def __init__(self, lat=52.8948846, lon=10.4468234):
         """
         Instanciate class, by default set Suderburg, Germany as base
         """
-        self.lat = lat
-        self.long = lon
+        self.coord = (lat, lon)
 
     def sunrise(self, when=datetime.now()):
         """
@@ -99,8 +99,8 @@ class SunRise:
         sunrise_t, sunset_t and solarnoon_t
         """
         timezone = self.timezone # in hours, east is positive
-        longitude= self.long     # in decimal degrees, east is positive
-        latitude = self.lat      # in decimal degrees, north is positive
+        latitude = self.coord[0]
+        longitude= self.coord[1]
       
         time  = self.time # percentage past midnight, i.e. noon  is 0.5
         day      = self.day     # daynumber 1=1/1/1900

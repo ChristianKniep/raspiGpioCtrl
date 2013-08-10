@@ -12,9 +12,55 @@ class TestUM(unittest.TestCase):
     def teardown(self):
         print ("TestUM:teardown() after each test method")
 
-    def test_strings_b_2(self):
-        print 'test_strings_b_2()  <============================ actual test code'
-        assert 'b'*2 == 'bb'
+    def test0_init(self):
+        """
+        Is Suderburg default place to go?
+        """
+        sun = sunrise.SunRise()
+        assert sun.coord == (52.8948846, 10.4468234)
+
+    @unittest.skip("not implemented yet")
+    def test_sunrise(self):
+        """
+        test sunrise (2013-08-10 -> 5:52AM)
+        """
+        pass
+
+    @unittest.skip("not implemented yet")
+    def test_sunset(self):
+        """
+        test sunset (2013-08-10 -> 8:54PM)
+        """
+        pass
+
+    @unittest.skip("not implemented yet")
+    def test_solarnoon(self):
+        """
+        test solarnoon
+        """
+        pass
+
+    @unittest.skip("not implemented yet")
+    def test_timefromdecimalday(self):
+        """
+        test 
+        """
+        pass
+
+    @unittest.skip("not implemented yet")
+    def test_preptime(self):
+        """
+        test 
+        """
+        pass
+
+    @unittest.skip("not implemented yet")
+    def test_calc(self):
+        """
+        test 
+        """
+        pass
+
 
 if __name__ == '__main__':
     unittest.main()
