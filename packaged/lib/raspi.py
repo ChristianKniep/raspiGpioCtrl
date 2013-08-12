@@ -25,13 +25,14 @@ class Parameter(object):
     def default(self):
         """ Default-Options """
         self.parser.add_option("-d", dest="debug",
-            default=0, action="count", help="Erhoehe Debug-Level (-d:1, -ddd:3")
+                               default=0, action="count",
+                               help="Erhoehe Debug-Level (-d:1, -ddd:3)")
         self.parser.add_option("-w", dest="run_webserver",
-            default=False, action="store_true",
-            help="Spawn (not yet) webserver")
+                default=False, action="store_true",
+                help="Spawn (not yet) webserver")
         self.parser.add_option("--dry-run", dest="dry_run",
-            default=False, action="store_true",
-            help="dry run on !raspi creating gpio-path in `pwd`")
+                default=False, action="store_true",
+                help="dry run on !raspi creating gpio-path in `pwd`")
         self.parser.add_option("-c", dest="create_cfg",
             default=False, action="store_true",
             help="create config 'raspi_gpio.cfg' with example setup")
