@@ -2,7 +2,10 @@
 # -*- coding: utf-8 -*-
 
 from optparse import OptionParser
+from ConfigParser import ConfigParser
 import sys
+import os
+import md5
 try:
     import cherrypy
 except ImportError:
@@ -10,6 +13,13 @@ except ImportError:
     app_path += "2.7/lib/python2.7/site-packages/"
     sys.path.append(app_path)
     import cherrypy
+
+PIN_MODES = {
+    '0':'off',
+    '1':'time',
+    '2':'manual',
+    '3':'sun'
+}
 
 
 class Parameter(object):
@@ -64,18 +74,116 @@ class GpioCtrl(object):
         """
         init gpio
         """
-        self.gpio_pins = {
-             'gpio4':{
-                'id':'Front',
-                'mode':'time',
-                'prio':'0',
-                'on':"18:00",
-                'duration':"30",
-                'sun_delay':'10',
-                'state':0,
-                'dow':'Mon,Tue,Wed,Thu,Fr,Sat,Sun',
-             }
+        self.gpio_pins = {}
+        self.cfg_file = None
+
+    def set_cfg(self, file_path):
+        """
+        Set file path of cfg_file
+        """
+        self.cfg_file = file_path
+
+    def read_cfg(self):
+        """
+        read cfg file and update gpio_pins dict
+        """
+        config = ConfigParser()
+        pass
+
+
+class GpioPin(object):
+    """
+    Object that represents a pin
+    """
+    def __init__(self, cfg_file=None):
+        """
+        create object from cfg_file or empty one
+        """
+        self.cfg_file = None
+        self.crypt = None
+        self.pin_nr = '0'
+        self.prio = '0'
+        self.name = 'None'
+        self.mode = '0'
+        self.groups = ''
+        self.start = '00:00'
+        self.duration = '0'
+        self.sun_delay = '0'
+        self.state = '0'
+        self.dow = 'Mon,Tue,Wed,Thu,Fr,Sat,Sun'
+        if cfg_file is not None:
+            self.cfg_file = cfg_file
+            self.read_cfg()
+
+    def read_cfg(self):
+        """
+        read in instance from cfg file
+        """
+        cfg = ConfigParser()
+        assert os.path.exists(self.cfg_file)
+        cfg.read(self.cfg_file)
+        for opt in cfg.options('global'):
+            self.__dict__[opt] = cfg.get('global', opt)
+        self.crypt = self.get_md5()
+
+    def get_md5(self, file_path=None):
+        """
+        returns md5 hash of file content
+        """
+        if file_path is None:
+            filed = open(self.cfg_file, "r")
+        else:
+            filed = open(file_path, "r")
+        crypt = md5.new(filed.read())
+        filed.close()
+        return crypt.hexdigest()
+
+    def write_cfg(self, cfg_file=None):
+        """
+        write config to file - rereads if md5 has changed
+        """
+        crypt = None
+        if cfg_file is None:
+            # if no cfg_file is given, the instance should already have one
+            assert self.cfg_file != None
+        else:
+            # if a cfg was given, it will be set as default file
+            self.cfg_file = cfg_file
+
+        if os.path.exists(self.cfg_file):
+            # if the file exists we get the md5
+            crypt = self.get_md5()
+            if self.crypt == crypt:
+                raise IOError("cfg file changed on disk!")
+
+        cfg = ConfigParser()
+        sec = 'global'
+        cfg.add_section(sec)
+        for key, val in self.get_json().items():
+            cfg.set(sec, key, val)
+        filed = open(cfg_file, "w")
+        cfg.write(filed)
+        filed.close()
+        self.crypt = self.get_md5()
+
+    def get_json(self):
+        """
+        return json
+        """
+        res = {
+            'nr': self.pin_nr,
+            'name': self.name,
+            'mode': PIN_MODES[self.mode],
+            'prio': self.prio,
+            'on': self.start,
+            'duration': self.duration,
+            'sun_delay': self.sun_delay,
+            'state': self.state,
+            'dow': self.dow,
+            'groups': ','.join(self.groups),
         }
+        return res
+
 
 
 class Web(object):
