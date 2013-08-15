@@ -180,7 +180,7 @@ class GpioPin(object):
             'sun_delay': self.sun_delay,
             'state': self.state,
             'dow': self.dow,
-            'groups': ','.join(self.groups),
+            'groups': self.groups,
         }
         return res
 

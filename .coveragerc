@@ -1,2 +1,2 @@
 [report]
-omit = *cherrypy*,*email*,*BaseHTTPServer*,*Cookie*,*SocketServer*,*bisect*,*calendar*,*cgi*,*encodings*,*httplib*,*json*,*mime*,*pydoc*,*quopri*,*rfc822*,*urllib2*
+omit = *cherrypy*,*email*,*BaseHTTPServer*,*Cookie*,*SocketServer*,*bisect*,*calendar*,*cgi*,*encodings*,*httplib*,*json*,*mime*,*pydoc*,*quopri*,*rfc822*,*urllib2*,*md5*
