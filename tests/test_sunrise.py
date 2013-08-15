@@ -14,7 +14,7 @@ class TestUM(unittest.TestCase):
 
     def test0_init(self):
         """
-        Is Suderburg default place to go?
+        SunRise >0_0> Is Suderburg default place to go?
         """
         sun = sunrise.SunRise()
         assert sun.coord == (52.8948846, 10.4468234)
@@ -22,42 +22,42 @@ class TestUM(unittest.TestCase):
     @unittest.skip("not implemented yet")
     def test_sunrise(self):
         """
-        test sunrise (2013-08-10 -> 5:52AM)
+        SunRise >0_0> test sunrise (2013-08-10 -> 5:52AM)
         """
         pass
 
     @unittest.skip("not implemented yet")
     def test_sunset(self):
         """
-        test sunset (2013-08-10 -> 8:54PM)
+        SunRise >0_0> test sunset (2013-08-10 -> 8:54PM)
         """
         pass
 
     @unittest.skip("not implemented yet")
     def test_solarnoon(self):
         """
-        test solarnoon
+        SunRise >0_0> test solarnoon
         """
         pass
 
     @unittest.skip("not implemented yet")
     def test_timefromdecimalday(self):
         """
-        test 
+        SunRise >0_0> test 
         """
         pass
 
     @unittest.skip("not implemented yet")
     def test_preptime(self):
         """
-        test 
+        SunRise >0_0> test 
         """
         pass
 
     @unittest.skip("not implemented yet")
     def test_calc(self):
         """
-        test 
+        SunRise >0_0> test 
         """
         pass
 
