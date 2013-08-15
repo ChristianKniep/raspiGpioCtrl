@@ -3,7 +3,7 @@ import os
 from ConfigParser import ConfigParser
 from raspi import GpioPin, PIN_MODES
 
-PREFIX = os.environ.get("WORKSPACE", "./")
+PREFIX = os.environ.get("WORKSPACE", ".")
 
 class TestRaspiPin(unittest.TestCase):
     def setUp(self):
@@ -42,7 +42,7 @@ class TestRaspiPin(unittest.TestCase):
         """
         Pin >0_0> check items in initial __dict__ from test1.cfg
         """
-        test1_file = "%smisc/test1.cfg" % PREFIX
+        test1_file = "%s/misc/test1.cfg" % PREFIX
         pin1 = GpioPin(test1_file)
             
         exp_items = {
@@ -72,7 +72,7 @@ class TestRaspiPin(unittest.TestCase):
         """
         Pin >0_2> check md5 of default test-file
         """
-        crypt = self.pin0.get_md5("%smisc/md5_check" % PREFIX)
+        crypt = self.pin0.get_md5("%s/misc/md5_check" % PREFIX)
         self.assertTrue("8c77efd73d331fb65bef594e2c854894" == crypt)
 
     def test1_0_get_json(self):
@@ -99,7 +99,7 @@ class TestRaspiPin(unittest.TestCase):
         """
         Pin >2_0> Write empty pin0
         """
-        cfg_file = '%smisc/tmp_test.cfg' % PREFIX
+        cfg_file = '%s/misc/tmp_test.cfg' % PREFIX
         pin = GpioPin()
         pin.write_cfg(cfg_file)
         self.assertTrue(pin.crypt == '730f699d91ae6beb84bab4ae8362e55b',
