@@ -176,10 +176,20 @@ class TestRaspiPin(unittest.TestCase):
         filed = open("%s/gpio1/value" % gpio_sys, "r")
         cont = filed.read().strip()
         self.assertTrue(cont == "0", cont)
-    
+
     def test3_1_pin(self):
         """
-        Pin >3_1> init dry-run pin and set_pin(1) / set_pin(0)
+        Pin >3_1> read_real_life()
+        """
+        test1_file = "%s/misc/test1.cfg" % PREFIX
+        pin1 = GpioPin(self.opt, test1_file)
+        self.assertTrue("0" == pin1.read_real_life())
+        pin1.flip()
+        self.assertTrue("1" == pin1.read_real_life())
+
+    def test3_2_pin(self):
+        """
+        Pin >3_2> init dry-run pin and set_pin(1) / set_pin(0)
         """
         test1_file = "%s/misc/test1.cfg" % PREFIX
         pin1 = GpioPin(self.opt, test1_file)
@@ -200,9 +210,9 @@ class TestRaspiPin(unittest.TestCase):
         filed.close()
         self.assertTrue(cont == "0", cont)
     
-    def test3_2_flip(self):
+    def test3_3_flip(self):
         """
-        Pin >3_2> init dry-run pin and flip twice
+        Pin >3_3> init dry-run pin and flip twice
         """
         test1_file = "%s/misc/test1.cfg" % PREFIX
         pin1 = GpioPin(self.opt, test1_file)
@@ -267,6 +277,14 @@ class TestRaspiPin(unittest.TestCase):
         self.assertTrue(pin.mode == "2")
         pin.change_mode("sun")
         self.assertTrue(pin.mode == "3")
+
+    def test5_1_change_false_mode(self):
+        """
+        Pin >5_0> Change mode to FooBar, expecting ValueError
+        """
+        pin = GpioPin(self.opt)
+        self.assertRaises(ValueError, pin.change_mode, ("FooBar"))
+
 
     @unittest.skip("not implemented yet")
     def test99_0_save_cfg(self):

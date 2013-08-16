@@ -169,7 +169,7 @@ class GpioPin(object):
                 self.mode = str(key)
                 break
         else:
-            assert False, "%s is no valid mode" % mode_str
+            raise ValueError("%s is no valid mode" % mode_str)
 
     def deb(self, msg, dlevel=1):
         """
@@ -177,13 +177,6 @@ class GpioPin(object):
         """
         if self.opt.debug >= dlevel:
             print "%s >> %s" % (dlevel, msg)
-
-    def read_pin(self):
-        """
-        reads the value out of the pin
-        If pin is not available initilize the pin
-        """
-        pass
 
     def init_pin(self):
         """
