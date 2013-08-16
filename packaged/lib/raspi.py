@@ -31,12 +31,10 @@ class ArgParameter(object):
         """
         Parameterhandling
         """
-        self.args = None
-        self.options = None
         self.parser = ArgumentParser()
         self.default()
         # copy over all class.attributes
-        self.args = self.parser.parse_args()
+        args = self.parser.parse_args()
 
     def default(self):
         """
@@ -51,18 +49,8 @@ class ArgParameter(object):
             help="Root dir for config, lock-files, etc (def:/)")
 
 
-class Parameter(object):
-    """ parameter object """
-    def __init__(self):
-        # Parameterhandling
-        usage = "scgather [options]"
-        self.args = None
-        self.options = None
-        self.parser = OptionParser(usage=usage)
-        self.default()
-
+""" Old Parameter
     def default(self):
-        """ Default-Options """
         self.parser.add_option("-d", dest="debug",
                                default=0, action="count",
                                help="Erhoehe Debug-Level (-d:1, -ddd:3)")
@@ -86,14 +74,7 @@ class Parameter(object):
         
         # copy over all class.attributes
         (self.options, self.args) = self.parser.parse_args()
-
-    def get(self, name):
-        """ return option value """
-        if name in self.options.__dict__.keys():
-            return self.options.__dict__[name]
-        else:
-            raise IOError(("Option '%s' not found" % name))
-
+"""
 
 class GpioCtrl(object):
     """
@@ -317,7 +298,7 @@ class GpioPin(object):
         offset = datetime.timedelta(0,
                         minutes=int(self.duration))
         return temp_on + offset
-    
+
 
 class Web(object):
     """
