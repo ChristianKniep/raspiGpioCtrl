@@ -80,10 +80,11 @@ class GpioCtrl(object):
     """
     Controller of raspberry gpio pins
     """
-    def __init__(self):
+    def __init__(self, opt):
         """
         init gpio
         """
+        self.opt = opt
         self.gpio_pins = {}
         self.cfg_file = None
 
@@ -305,6 +306,7 @@ class Web(object):
     Webside modeled as an cherrypy class
     """
     def __init__(self, opt):
+        self.opt = opt
         self.cfg_file = "/etc/raspi_gpio.cfg"
         self.gctrl = GpioCtrl(opt)
         self.gpio_pins = self.gctrl.gpio_pins

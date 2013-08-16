@@ -1,11 +1,12 @@
 import unittest
-from raspi import Web, Parameter, GpioCtrl
+import argparse
+from raspi import Web, GpioCtrl
 
-class TestRaspiGpio(unittest.TestCase):
+class TestRaspiWeb(unittest.TestCase):
 
     def setUp(self):
-        options = Parameter([''])
-        self.web = Web(options)
+        self.opt = argparse.Namespace(debug=1, root=".", dry_run=True)
+        self.web = Web(self.opt)
 
     def teardown(self):
         print ("TestUM:teardown() after each test method")
