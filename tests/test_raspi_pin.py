@@ -59,7 +59,7 @@ class TestRaspiPin(unittest.TestCase):
         """
         Pin >0_1> check items in initial __dict__ from test1.cfg
         """
-        test1_file = "%s/misc/test1.cfg" % PREFIX
+        test1_file = "%s/packaged/etc/raspigpioctrl/pin1.cfg" % PREFIX
         pin1 = GpioPin(self.opt, test1_file)
             
         exp_items = {
@@ -152,7 +152,7 @@ class TestRaspiPin(unittest.TestCase):
         """
         Pin >2_1> Write real pin1 cfg
         """
-        test1_cfg = "%s/misc/test1.cfg" % PREFIX
+        test1_cfg = "%s/packaged/etc/raspigpioctrl/pin1.cfg" % PREFIX
         pin = GpioPin(self.opt, test1_cfg)
         pin.start = "10:00"
         pin.duration = "30"
@@ -169,7 +169,7 @@ class TestRaspiPin(unittest.TestCase):
         """
         Pin >2_2> Write cfg with changed cfg-file in background (IOError)
         """
-        test1_cfg = "%s/misc/test1.cfg" % PREFIX
+        test1_cfg = "%s/packaged/etc/raspigpioctrl/pin1.cfg" % PREFIX
         pin = GpioPin(self.opt, test1_cfg)
         cfg = {
             'start': "10:00",
@@ -194,7 +194,7 @@ class TestRaspiPin(unittest.TestCase):
         """
         Pin >3_0> init dry-run pin
         """
-        test1_file = "%s/misc/test1.cfg" % PREFIX
+        test1_file = "%s/packaged/etc/raspigpioctrl/pin1.cfg" % PREFIX
         pin1 = GpioPin(self.opt, test1_file)
         gpio_sys = "./sys/class/gpio/"
         if os.path.exists("./sys"):
@@ -210,7 +210,7 @@ class TestRaspiPin(unittest.TestCase):
         """
         Pin >3_1> read_real_life()
         """
-        test1_file = "%s/misc/test1.cfg" % PREFIX
+        test1_file = "%s/packaged/etc/raspigpioctrl/pin1.cfg" % PREFIX
         pin1 = GpioPin(self.opt, test1_file)
         self.assertTrue("0" == pin1.read_real_life())
         pin1.flip()
@@ -220,7 +220,7 @@ class TestRaspiPin(unittest.TestCase):
         """
         Pin >3_2> init dry-run pin and set_pin(1) / set_pin(0)
         """
-        test1_file = "%s/misc/test1.cfg" % PREFIX
+        test1_file = "%s/packaged/etc/raspigpioctrl/pin1.cfg" % PREFIX
         pin1 = GpioPin(self.opt, test1_file)
         gpio_sys = "./sys/class/gpio/"
         if os.path.exists("./sys"):
@@ -243,7 +243,7 @@ class TestRaspiPin(unittest.TestCase):
         """
         Pin >3_3> init dry-run pin and flip twice
         """
-        test1_file = "%s/misc/test1.cfg" % PREFIX
+        test1_file = "%s/packaged/etc/raspigpioctrl/pin1.cfg" % PREFIX
         pin1 = GpioPin(self.opt, test1_file)
         gpio_sys = "./sys/class/gpio/"
         if os.path.exists("./sys"):
