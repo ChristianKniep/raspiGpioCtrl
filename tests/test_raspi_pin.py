@@ -9,7 +9,7 @@ PREFIX = os.environ.get("WORKSPACE", ".")
 
 class TestRaspiPin(unittest.TestCase):
     def setUp(self):
-        self.opt = argparse.Namespace(debug=1, root=".", dry_run=True)
+        self.opt = argparse.Namespace(debug=1, root="./packaged", dry_run=True)
         self.pin0 = GpioPin(self.opt)
         self.skip_keys = ['opt']
 
@@ -50,8 +50,8 @@ class TestRaspiPin(unittest.TestCase):
             'sun_delay': '0',
             'state': '0',
             'dow': 'Mon,Tue,Wed,Thu,Fr,Sat,Sun',
-            'gpio_base': "./sys/class/gpio",
-            'pin_base': "./sys/class/gpio/gpio0",
+            'gpio_base': "./packaged/sys/class/gpio",
+            'pin_base': "./packaged/sys/class/gpio/gpio0",
         }
         self.check_dict(self.pin0, exp_items)
 
@@ -75,8 +75,8 @@ class TestRaspiPin(unittest.TestCase):
             'sun_delay': '0',
             'state': '0',
             'dow': 'Wed,Sun',
-            'gpio_base': "./sys/class/gpio",
-            'pin_base': "./sys/class/gpio/gpio1",
+            'gpio_base': "./packaged/sys/class/gpio",
+            'pin_base': "./packaged/sys/class/gpio/gpio1",
         }
         self.check_dict(pin1, exp_items)
 
@@ -98,8 +98,8 @@ class TestRaspiPin(unittest.TestCase):
             'sun_delay': '0',
             'state': '0',
             'dow': 'Mon,Tue,Wed,Thu,Fr,Sat,Sun',
-            'gpio_base': "./sys/class/gpio",
-            'pin_base': "./sys/class/gpio/gpio1",
+            'gpio_base': "./packaged/sys/class/gpio",
+            'pin_base': "./packaged/sys/class/gpio/gpio1",
         }
         cfg = {
             'pin_nr': '1',
@@ -196,9 +196,9 @@ class TestRaspiPin(unittest.TestCase):
         """
         test1_file = "%s/packaged/etc/raspigpioctrl/pin1.cfg" % PREFIX
         pin1 = GpioPin(self.opt, test1_file)
-        gpio_sys = "./sys/class/gpio/"
-        if os.path.exists("./sys"):
-            print os.system("rm -rf ./sys")
+        gpio_sys = "./packaged/sys/class/gpio/"
+        if os.path.exists("./packaged/sys"):
+            print os.system("rm -rf ./packaged/sys")
             pin1.deb("'%s' removed")
             self.assertFalse(os.path.exists(gpio_sys), "")
         pin1.init_pin()
@@ -222,9 +222,9 @@ class TestRaspiPin(unittest.TestCase):
         """
         test1_file = "%s/packaged/etc/raspigpioctrl/pin1.cfg" % PREFIX
         pin1 = GpioPin(self.opt, test1_file)
-        gpio_sys = "./sys/class/gpio/"
-        if os.path.exists("./sys"):
-            print os.system("rm -rf ./sys")
+        gpio_sys = "./packaged/sys/class/gpio/"
+        if os.path.exists("./packaged/sys"):
+            print os.system("rm -rf ./packaged/sys")
             pin1.deb("'%s' removed")
             self.assertFalse(os.path.exists(gpio_sys), "")
         pin1.init_pin()
@@ -245,9 +245,9 @@ class TestRaspiPin(unittest.TestCase):
         """
         test1_file = "%s/packaged/etc/raspigpioctrl/pin1.cfg" % PREFIX
         pin1 = GpioPin(self.opt, test1_file)
-        gpio_sys = "./sys/class/gpio/"
-        if os.path.exists("./sys"):
-            print os.system("rm -rf ./sys")
+        gpio_sys = "./packaged/sys/class/gpio/"
+        if os.path.exists("./packaged/sys"):
+            print os.system("rm -rf ./packaged/sys")
             pin1.deb("'%s' removed")
             self.assertFalse(os.path.exists(gpio_sys), "")
         pin1.init_pin()
@@ -314,13 +314,13 @@ class TestRaspiPin(unittest.TestCase):
         pin = GpioPin(self.opt)
         self.assertRaises(ValueError, pin.change_mode, ("FooBar"))
 
-
-    @unittest.skip("not implemented yet")
-    def test99_0_save_cfg(self):
+    def test6_0_get_id(self):
         """
-        Pin >99_0> init
+        Pin >6_0> Get identifier for sorting pin-list in GpioCtrl
         """
-        pass
+        test1_file = "%s/packaged/etc/raspigpioctrl/pin1.cfg" % PREFIX
+        pin1 = GpioPin(self.opt, test1_file)
+        self.assertTrue(pin1.get_id() == "1")
 
 
 if __name__ == '__main__':
