@@ -9,9 +9,9 @@ from pprint import pprint
 import sys
 #import datetime
 #import time
-#from optparse import OptionParser
-from libgpio import GpioCtrl, Parameter
-from raspi import Web
+import argparse
+#from libgpio import GpioCtrl, Parameter
+from raspi import Web, ArgParameter
 try:
     import cherrypy
 except ImportError:
@@ -25,15 +25,17 @@ except ImportError:
 def main():
     """ main function """
     # Parameter
-    options = Parameter()
-    if options.get("run_cronjob"):
-        srv = GpioCtrl(options)
-        srv.run_cronjob()
-    if options.get("run_webserver"):
-        cherrypy.config.update(
-            {'server.socket_port': int(options.get("web_port")),}
-            )
-        cherrypy.quickstart(Web(options))
+    options = ArgParameter()
+    options = argparse.Namespace(debug=1, root="./", dry_run=True)
+    if options.dry_run:
+        print "dry-run!"
+    #    srv = GpioCtrl(options)
+    #    srv.run_cronjob()
+    #if options.get("run_webserver"):
+    #    cherrypy.config.update(
+    #        {'server.socket_port': int(options.get("web_port")),}
+    #        )
+    #    cherrypy.quickstart(Web(options))
 
 
 # ein Aufruf von main() ganz unten

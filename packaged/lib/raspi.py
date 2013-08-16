@@ -1,11 +1,14 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from optparse import OptionParser
+#from optparse import OptionParser
+from argparse import ArgumentParser
 from ConfigParser import ConfigParser
 import sys
 import os
+import subprocess
 import md5
+import datetime
 try:
     import cherrypy
 except ImportError:
@@ -20,6 +23,32 @@ PIN_MODES = {
     '2':'manual',
     '3':'sun'
 }
+
+class ArgParameter(object):
+    """
+    """
+    def __init__(self):
+        """
+        Parameterhandling
+        """
+        self.args = None
+        self.options = None
+        self.parser = ArgumentParser()
+        self.default()
+        # copy over all class.attributes
+        self.args = self.parser.parse_args()
+
+    def default(self):
+        """
+        """
+        self.parser.add_argument("-d", action="count", dest="debug",
+                    help="Increase output verbosity(-d:1, -ddd:3)")
+        self.parser.add_argument("--dry-run", dest="dry_run",
+                default=False, action="store_true",
+                help="dry run on !raspi creating gpio-path in `pwd`")
+        self.parser.add_argument("-r", dest="root",
+            default="/", action="store",
+            help="Root dir for config, lock-files, etc (def:/)")
 
 
 class Parameter(object):
@@ -95,10 +124,12 @@ class GpioPin(object):
     """
     Object that represents a pin
     """
-    def __init__(self, cfg_file=None):
+    def __init__(self, opt, cfg_file=None):
         """
         create object from cfg_file or empty one
         """
+        self.opt = opt
+        self.gpio_base = "%s/sys/class/gpio" % opt.root
         self.cfg_file = None
         self.crypt = None
         self.pin_nr = '0'
@@ -114,16 +145,72 @@ class GpioPin(object):
         if cfg_file is not None:
             self.cfg_file = cfg_file
             self.read_cfg()
+        self.pin_base = "%s/gpio%s" % (self.gpio_base, self.pin_nr)
+    
+    def set_cfg(self, cfg_dic):
+        """
+        Alter the config, only a number of cfgs are changable
+        """
+        w_able = ['pin_nr', 'prio', 'name', 'groups', 'start',
+                  'duration', 'sun_delay', 'dow']
+        for key, val in cfg_dic.items():
+            assert key in w_able, "%s not allowed to be set" % key
+            self.__dict__[key] = str(val)
+            if key == "pin_nr":
+                self.pin_base = "%s/gpio%s" % (self.gpio_base, self.pin_nr)
+                self.init_pin()
+
+    def change_mode(self, mode_str):
+        """
+        change mode 
+        """
+        for key, val in PIN_MODES.items():
+            if val == mode_str:
+                self.mode = str(key)
+                break
+        else:
+            assert False, "%s is no valid mode" % mode_str
+
+    def deb(self, msg, dlevel=1):
+        """
+        Print debug message
+        """
+        if self.opt.debug >= dlevel:
+            print "%s >> %s" % (dlevel, msg)
+
+    def read_pin(self):
+        """
+        reads the value out of the pin
+        If pin is not available initilize the pin
+        """
+        pass
+
+    def init_pin(self):
+        """
+        Init pin
+        """
+        pin_name = "gpio%s" % self.pin_nr
+        if not self.opt.dry_run:
+            pfad = "%s/export" % (self.gpio_base)
+            os.system("echo %s > %s" % (self.pin_nr, pfad))
+            pfad = "%s/direction" % (self.pin_base)
+            os.system("echo out > %s" % (pfad))
+            self.set_pin(0)
+        else:
+            pfad = "%s/%s" % (self.gpio_base, pin_name)
+            os.system("mkdir -p %s" % pfad)
+            self.set_pin(0)
 
     def read_cfg(self):
         """
         read in instance from cfg file
         """
         cfg = ConfigParser()
+        print subprocess.check_output(["pwd"])
         assert os.path.exists(self.cfg_file)
         cfg.read(self.cfg_file)
         for opt in cfg.options('global'):
-            self.__dict__[opt] = cfg.get('global', opt)
+            self.__dict__[opt] = str(cfg.get('global', opt))
         self.crypt = self.get_md5()
 
     def get_md5(self, file_path=None):
@@ -165,6 +252,7 @@ class GpioPin(object):
         cfg.write(filed)
         filed.close()
         self.crypt = self.get_md5()
+        self.val_path = "%s/gpio%s/value" % (self.gpio_base, self.pin_nr)
 
     def get_json(self):
         """
@@ -184,7 +272,59 @@ class GpioPin(object):
         }
         return res
 
+    def read_real_life(self):
+        """
+        """
+        filed = open("%s/value" % self.pin_base, "r")
+        cont = filed.read().strip()
+        filed.close()
+        return cont
 
+    def flip(self):
+        """
+        changes the value of the pin
+        """
+        if self.state == "0":
+            self.set_pin(1)
+        else:
+            self.set_pin(0)
+
+    def set_pin(self, val):
+        """
+        set pin to value
+        """
+        pfad = "%s/value" % (self.pin_base)
+        os.system("echo %s > %s" % (val, pfad))
+        self.state = str(val)
+    
+    def get_dt_on(self):
+        """
+        returns a datetime instance with the date to switch on
+        """
+        (std, minute) = self.start.split(":")
+        now = datetime.datetime.now()
+        temp_on = datetime.datetime(year=now.year,
+                        month=now.month,
+                        day=now.day,
+                        hour=int(std),
+                        minute=int(minute))
+        return temp_on
+    
+    def get_dt_off(self):
+        """
+        returns a datetime instance with the date to switch on + duration
+        """
+        (std, minute) = self.start.split(":")
+        now = datetime.datetime.now()
+        temp_on = datetime.datetime(year=now.year,
+                        month=now.month,
+                        day=now.day,
+                        hour=int(std),
+                        minute=int(minute))
+        offset = datetime.timedelta(0,
+                        minutes=int(self.duration))
+        return temp_on + offset
+    
 
 class Web(object):
     """
