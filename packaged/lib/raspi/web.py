@@ -56,11 +56,9 @@ class Web(object):
                 checked = " checked"
             else:
                 checked = ""
+            arg = (mode, checked, mode)
             self.html += """
-                    <input type="radio" name="mode" value="%s"%s>%s""" % (
-                        mode, checked, mode
-                    )
-                        
+                    <input type="radio" name="mode" value="%s"%s>%s""" % args
         self.html += """
                 </td>"""
         self.html += """
