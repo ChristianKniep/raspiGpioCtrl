@@ -3,7 +3,7 @@ import os
 import argparse
 import datetime
 from ConfigParser import ConfigParser
-from raspi import GpioPin, PIN_MODES
+from raspi.pin import GpioPin, PIN_MODES
 
 PREFIX = os.environ.get("WORKSPACE", ".")
 

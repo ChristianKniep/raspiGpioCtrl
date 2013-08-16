@@ -1,6 +1,7 @@
 import unittest
 import argparse
-from raspi import Web, GpioCtrl
+from raspi.web import Web
+from raspi.ctrl import GpioCtrl
 
 class TestRaspiWeb(unittest.TestCase):
 
