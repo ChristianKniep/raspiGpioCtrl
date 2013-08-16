@@ -9,11 +9,12 @@ import md5
 import datetime
 
 PIN_MODES = {
-    '0':'off',
-    '1':'time',
-    '2':'manual',
-    '3':'sun'
+    '0': 'off',
+    '1': 'time',
+    '2': 'manual',
+    '3': 'sun'
 }
+
 
 class GpioPin(object):
     """

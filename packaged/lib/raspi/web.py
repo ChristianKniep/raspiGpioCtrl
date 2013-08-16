@@ -57,8 +57,10 @@ class Web(object):
             else:
                 checked = ""
             self.html += """
-                    <input type="radio" name="mode" value="%s"%s>%s""" % \
-                            (mode, checked, mode)
+                    <input type="radio" name="mode" value="%s"%s>%s""" % (
+                        mode, checked, mode
+                    )
+                        
         self.html += """
                 </td>"""
         self.html += """
@@ -91,7 +93,7 @@ class Web(object):
         """
         Creates the list of gpio pins and handles changes
         """
-        if gpio != None:
+        if gpio is not None:
             self.form_gpio = gpio
             self.form_on = on
             self.form_dow_Wed = dow_Wed

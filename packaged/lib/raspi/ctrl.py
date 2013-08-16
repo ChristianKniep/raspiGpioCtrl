@@ -3,6 +3,7 @@
 
 from ConfigParser import ConfigParser
 
+
 class GpioCtrl(object):
     """
     Controller of raspberry gpio pins
@@ -26,5 +27,3 @@ class GpioCtrl(object):
         read cfg file and update gpio_pins dict
         """
         config = ConfigParser()
-
-
