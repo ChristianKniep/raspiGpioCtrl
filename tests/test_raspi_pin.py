@@ -117,7 +117,7 @@ class TestRaspiPin(unittest.TestCase):
 
     def test1_0_get_json(self):
         """
-        Pin >0_0> get initial json
+        Pin >1_0> get initial json
         """
         json = self.pin0.get_json()
         exp = {
@@ -140,6 +140,8 @@ class TestRaspiPin(unittest.TestCase):
         Pin >2_0> Write empty pin0
         """
         cfg_file = '%s/misc/tmp_test.cfg' % PREFIX
+        if os.path.exists(cfg_file):
+            os.remove(cfg_file)
         pin = GpioPin(self.opt)
         pin.write_cfg(cfg_file)
         self.assertTrue(pin.crypt == '730f699d91ae6beb84bab4ae8362e55b',
@@ -148,7 +150,7 @@ class TestRaspiPin(unittest.TestCase):
 
     def test2_1_save_cfg(self):
         """
-        Pin >2_1> Write real pin1
+        Pin >2_1> Write real pin1 cfg
         """
         test1_cfg = "%s/misc/test1.cfg" % PREFIX
         pin = GpioPin(self.opt, test1_cfg)
@@ -156,9 +158,36 @@ class TestRaspiPin(unittest.TestCase):
         pin.duration = "30"
         pin.dow = "Fri,Sat,Sun"
         cfg_file = '%s/misc/tmp_test.cfg' % PREFIX
+        if os.path.exists(cfg_file):
+            os.remove(cfg_file)
         pin.write_cfg(cfg_file)
         self.assertTrue(pin.crypt == '0d8e37fb31e650472960e42be02b80f6',
                         "CRYPT: %s" % pin.crypt)
+        os.remove(cfg_file)
+
+    def test2_2_failed_save_cfg(self):
+        """
+        Pin >2_2> Write cfg with changed cfg-file in background (IOError)
+        """
+        test1_cfg = "%s/misc/test1.cfg" % PREFIX
+        pin = GpioPin(self.opt, test1_cfg)
+        cfg = {
+            'start': "10:00",
+            'duration': "30",
+            'dow': "Fri,Sat,Sun"
+        }
+        pin.set_cfg(cfg)
+        cfg_file = '%s/misc/tmp_test.cfg' % PREFIX
+        if os.path.exists(cfg_file):
+            os.remove(cfg_file)
+        pin.write_cfg(cfg_file)
+        self.assertTrue(pin.crypt == '0d8e37fb31e650472960e42be02b80f6',
+                        "CRYPT: %s" % pin.crypt)
+        
+        cfg = {'start': "10:30"}
+        pin.set_cfg(cfg)
+        os.system("echo FooBar >> %s" % cfg_file)
+        self.assertRaises(IOError, pin.write_cfg, (cfg_file))
         os.remove(cfg_file)
 
     def test3_0_pin(self):

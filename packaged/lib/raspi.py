@@ -184,9 +184,7 @@ class GpioPin(object):
         """
         pin_name = "gpio%s" % self.pin_nr
         if not self.opt.dry_run:
-            pfad = "%s/export" % (self.gpio_base)
             os.system("echo %s > %s" % (self.pin_nr, pfad))
-            pfad = "%s/direction" % (self.pin_base)
             os.system("echo out > %s" % (pfad))
             self.set_pin(0)
         else:
@@ -231,9 +229,11 @@ class GpioPin(object):
             self.cfg_file = cfg_file
 
         if os.path.exists(self.cfg_file):
+            self.deb(self.cfg_file)
             # if the file exists we get the md5
             crypt = self.get_md5()
-            if self.crypt == crypt:
+            self.deb(crypt)
+            if self.crypt != crypt:
                 raise IOError("cfg file changed on disk!")
 
         cfg = ConfigParser()
