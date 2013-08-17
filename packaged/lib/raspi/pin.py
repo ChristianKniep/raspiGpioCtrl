@@ -8,6 +8,8 @@ import subprocess
 import md5
 import datetime
 
+PREFIX = os.environ.get("WORKSPACE", "./")
+
 PIN_MODES = {
     '0': 'off',
     '1': 'time',
@@ -34,7 +36,7 @@ class GpioPin(object):
         create object from cfg_file or empty one
         """
         self.opt = opt
-        self.gpio_base = "%s/sys/class/gpio" % opt.root
+        self.gpio_base = "%s%s/sys/class/gpio" % (PREFIX, opt.root)
         self.cfg_file = None
         self.crypt = None
         self.pin_nr = '0'
@@ -125,6 +127,7 @@ class GpioPin(object):
         else:
             pfad = "%s/%s" % (self.gpio_base, pin_name)
             os.system("mkdir -p %s" % pfad)
+            print pfad
             self.set_pin(0)
 
     def read_cfg(self):

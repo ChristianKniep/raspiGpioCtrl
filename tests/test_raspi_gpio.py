@@ -84,7 +84,7 @@ class TestRaspiGpio(unittest.TestCase):
         ctrl = GpioCtrl(self.opt)
         ctrl.read_cfg()
         ctrl.flip('2')
-        gpio_sys = "./packaged/sys/class/gpio/" 
+        gpio_sys = "%s/packaged/sys/class/gpio/" % PREFIX 
         filed = open("%s/gpio2/value" % gpio_sys, "r")
         cont = filed.read().strip()
         filed.close()
