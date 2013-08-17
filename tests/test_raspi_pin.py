@@ -6,6 +6,8 @@ from ConfigParser import ConfigParser
 from raspi.pin import GpioPin, PIN_MODES, get_mode_id
 
 PREFIX = os.environ.get("WORKSPACE", "./")
+if not PREFIX.endswith("/"):
+    PREFIX += "/"
 
 class TestRaspiPin(unittest.TestCase):
     def setUp(self):
@@ -197,7 +199,7 @@ class TestRaspiPin(unittest.TestCase):
         test1_file = "%s/packaged/etc/raspigpioctrl/pin1.cfg" % PREFIX
         pin1 = GpioPin(self.opt, test1_file)
         gpio_sys = "%s/packaged/sys/class/gpio/" % PREFIX
-        if os.path.exists("./packaged/sys"):
+        if os.path.exists("%s/packaged/sys" % PREFIX):
             print os.system("rm -rf %s/packaged/sys" % PREFIX)
             pin1.deb("'%s' removed")
             self.assertFalse(os.path.exists(gpio_sys), "")

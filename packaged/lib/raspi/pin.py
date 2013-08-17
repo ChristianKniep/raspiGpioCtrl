@@ -9,6 +9,8 @@ import md5
 import datetime
 
 PREFIX = os.environ.get("WORKSPACE", "./")
+if not PREFIX.endswith("/"):
+    PREFIX += "/"
 
 PIN_MODES = {
     '0': 'off',

@@ -7,7 +7,8 @@ import os
 from pprint import pprint
 
 PREFIX = os.environ.get("WORKSPACE", "./")
-
+if not PREFIX.endswith("/"):
+    PREFIX += "/"
 
 class GpioCtrl(object):
     """

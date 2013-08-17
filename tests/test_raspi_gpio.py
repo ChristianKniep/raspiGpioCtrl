@@ -6,6 +6,9 @@ from raspi.ctrl import GpioCtrl, PREFIX
 from raspi.pin import GpioPin, get_mode_id, PIN_MODES
 from pprint import pprint
 
+if not PREFIX.endswith("/"):
+    PREFIX += "/"
+
 class TestRaspiGpio(unittest.TestCase):
     def setUp(self):
         self.opt = argparse.Namespace(debug=1, root="./packaged", dry_run=True)
@@ -85,6 +88,7 @@ class TestRaspiGpio(unittest.TestCase):
         ctrl.read_cfg()
         ctrl.flip('2')
         gpio_sys = "%s/packaged/sys/class/gpio/" % PREFIX 
+        print gpio_sys
         filed = open("%s/gpio2/value" % gpio_sys, "r")
         cont = filed.read().strip()
         filed.close()
