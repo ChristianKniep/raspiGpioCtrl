@@ -15,6 +15,15 @@ PIN_MODES = {
     '3': 'sun'
 }
 
+def get_mode_id(mode):
+    """
+    reverse lookup of PIN_MODES
+    """
+    for key, val in PIN_MODES.items():
+        if val == mode:
+            return key
+    return None
+
 
 class GpioPin(object):
     """
@@ -42,7 +51,37 @@ class GpioPin(object):
             self.cfg_file = cfg_file
             self.read_cfg()
         self.pin_base = "%s/gpio%s" % (self.gpio_base, self.pin_nr)
-    
+
+    def __lt__(self, other):
+        """
+        compares two instances of GpioPin
+        sort them according to there run time-frame and there prio
+        """
+        if self.get_dt_off() < other.get_dt_on():
+            # if end_time < other.start_time we are lower-then other
+            return True
+        if self.get_dt_on() > other.get_dt_off():
+            # or the other way around, other is lower-then us
+            return False
+        if self.prio < other.prio:
+            return True
+        else:
+            return False
+        if self.prio == other.prio:
+            return self.get_dt_on() <= other.get_dt_on()
+
+    def get_id(self):
+        """
+        return identifier on which a sort should be done
+        """
+        return self.pin_nr
+
+    def get_groups(self):
+        """
+        return identifier on which a sort should be done
+        """
+        return self.groups
+
     def set_cfg(self, cfg_dic):
         """
         Alter the config, only a number of cfgs are changable
@@ -93,8 +132,8 @@ class GpioPin(object):
         read in instance from cfg file
         """
         cfg = ConfigParser()
-        print subprocess.check_output(["pwd"])
-        assert os.path.exists(self.cfg_file)
+        amsg = "'%s' does not exists..." % self.cfg_file
+        assert os.path.exists(self.cfg_file), amsg
         cfg.read(self.cfg_file)
         for opt in cfg.options('global'):
             self.__dict__[opt] = str(cfg.get('global', opt))
@@ -183,9 +222,10 @@ class GpioPin(object):
         set pin to value
         """
         pfad = "%s/value" % (self.pin_base)
-        os.system("echo %s > %s" % (val, pfad))
+        cmd = "echo %s > %s" % (val, pfad)
+        err = os.system(cmd)
         self.state = str(val)
-    
+
     def get_dt_on(self):
         """
         returns a datetime instance with the date to switch on
@@ -198,7 +238,7 @@ class GpioPin(object):
                         hour=int(std),
                         minute=int(minute))
         return temp_on
-    
+
     def get_dt_off(self):
         """
         returns a datetime instance with the date to switch on + duration
@@ -213,3 +253,26 @@ class GpioPin(object):
         offset = datetime.timedelta(0,
                         minutes=int(self.duration))
         return temp_on + offset
+
+    def trigger_off(self, dt=None):
+        """
+        checks off date and turn off, if the time is right
+        """
+        if dt is None:
+            dt = datetime.datetime.now()
+        off = self.get_dt_off()
+        if off <= dt and self.state == '1' \
+           and self.mode not in (get_mode_id('manual')):
+            self.set_pin(0)
+
+    def trigger_on(self, dt=None):
+        """
+        checks off date and turn off, if the time is right
+        """
+        if dt is None:
+            dt = datetime.datetime.now()
+        on = self.get_dt_on()
+        off = self.get_dt_off()
+        if on <= dt and off > dt and self.state == '0' \
+           and self.mode not in (get_mode_id('manual'), get_mode_id('off')):
+            self.set_pin(1)

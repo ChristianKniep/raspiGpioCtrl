@@ -3,7 +3,7 @@ import os
 import argparse
 import datetime
 from ConfigParser import ConfigParser
-from raspi.pin import GpioPin, PIN_MODES
+from raspi.pin import GpioPin, PIN_MODES, get_mode_id
 
 PREFIX = os.environ.get("WORKSPACE", ".")
 
@@ -321,6 +321,158 @@ class TestRaspiPin(unittest.TestCase):
         test1_file = "%s/packaged/etc/raspigpioctrl/pin1.cfg" % PREFIX
         pin1 = GpioPin(self.opt, test1_file)
         self.assertTrue(pin1.get_id() == "1")
+
+    def test7_0_less_then(self):
+        """
+        Pin >7_0> pin.__lt__() Order according to timeslot
+        """
+        lst = []
+        pin0 = GpioPin(self.opt)
+        pin0.set_cfg({
+            'pin_nr': '4',
+            'start': '00:00',
+            'prio': '0',
+            'duration': '10',
+        })
+        pin1 = GpioPin(self.opt)
+        pin1.set_cfg({
+            'pin_nr': '3',
+            'start': '00:10',
+            'prio': '0',
+            'duration': '10',
+        })
+        pin2 = GpioPin(self.opt)
+        pin2.set_cfg({
+            'pin_nr': '2',
+            'start': '00:20',
+            'prio': '0',
+            'duration': '10',
+        })
+        pin3 = GpioPin(self.opt)
+        pin3.set_cfg({
+            'pin_nr': '1',
+            'start': '00:30',
+            'prio': '0',
+            'duration': '10',
+        })
+        lst.append(pin1)
+        lst.append(pin3)
+        lst.append(pin0)
+        lst.append(pin2)
+        got = ""
+        for item in lst:
+            got += item.get_id()
+        exp = "3142"
+        self.assertTrue(got == exp)
+        lst.sort()
+        got = ""
+        for item in lst:
+            got += item.get_id()
+        exp = "4321"
+
+    def test7_1_less_then(self):
+        """
+        Pin >7_1> Compare two pins, check prio ordering
+        """
+        lst = []
+        pin0 = GpioPin(self.opt)
+        pin0.set_cfg({
+            'pin_nr': '4',
+            'start': '00:00',
+            'prio': '1',
+            'duration': '10',
+        })
+        pin1 = GpioPin(self.opt)
+        pin1.set_cfg({
+            'pin_nr': '3',
+            'start': '00:00',
+            'prio': '2',
+            'duration': '10',
+        })
+        pin2 = GpioPin(self.opt)
+        pin2.set_cfg({
+            'pin_nr': '2',
+            'start': '00:00',
+            'prio': '3',
+            'duration': '10',
+        })
+        pin3 = GpioPin(self.opt)
+        pin3.set_cfg({
+            'pin_nr': '1',
+            'start': '00:00',
+            'prio': '4',
+            'duration': '10',
+        })
+        lst.append(pin1)
+        lst.append(pin3)
+        lst.append(pin0)
+        lst.append(pin2)
+        got = ""
+        for item in lst:
+            got += item.get_id()
+        exp = "3142"
+        self.assertTrue(got == exp)
+        lst.sort()
+        got = ""
+        for item in lst:
+            got += item.get_id()
+        exp = "4321"
+
+    def test8_0_trigger(self):
+        """
+        Pin >8_0> trigger off
+        """
+        pin = GpioPin(self.opt)
+        now = datetime.datetime.now()
+        temp_on = datetime.datetime(year=now.year,
+                        month=now.month,
+                        day=now.day,
+                        hour=now.hour,
+                        minute=now.minute - 10)
+        cfg = {
+            'start': temp_on.strftime("%H:%M"),
+            'duration': '5',
+            'pin_nr': '1',
+        }
+        pin.set_cfg(cfg)
+        pin.change_mode('time')
+        pin.init_pin()
+        pin.set_pin(1)
+        self.assertTrue("1" == pin.read_real_life())
+        pin.trigger_off()
+        self.assertTrue("0" == pin.read_real_life())
+        pin.trigger_off()
+        self.assertTrue("0" == pin.read_real_life())
+        pin.set_pin(1)
+        self.assertTrue("1" == pin.read_real_life())
+        pin.trigger_off()
+        self.assertTrue("0" == pin.read_real_life())
+
+    def test8_1_trigger(self):
+        """
+        Pin >8_1> trigger on
+        """
+        pin = GpioPin(self.opt)
+        now = datetime.datetime.now()
+        temp_on = datetime.datetime(year=now.year,
+                        month=now.month,
+                        day=now.day,
+                        hour=now.hour,
+                        minute=now.minute + 1)
+        cfg = {
+            'start': now.strftime("%H:%M"),
+            'duration': '5',
+            'pin_nr': '1',
+        }
+        pin.set_cfg(cfg)
+        pin.change_mode('time')
+        pin.init_pin()
+        pin.trigger_on()
+        self.assertTrue("1" == pin.read_real_life())
+        pin.set_pin(0)
+        self.assertTrue("0" == pin.read_real_life())
+        pin.trigger_on()
+        self.assertTrue("1" == pin.read_real_life())
 
 
 if __name__ == '__main__':

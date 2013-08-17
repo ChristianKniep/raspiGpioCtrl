@@ -2,6 +2,11 @@
 # -*- coding: utf-8 -*-
 
 from ConfigParser import ConfigParser
+from raspi.pin import GpioPin
+import os
+from pprint import pprint
+
+PREFIX = os.environ.get("WORKSPACE", "./")
 
 
 class GpioCtrl(object):
@@ -13,17 +18,62 @@ class GpioCtrl(object):
         init gpio
         """
         self.opt = opt
+        self.gpio_cfg_path = "%s/etc/raspigpioctrl/" % opt.root 
         self.gpio_pins = {}
-        self.cfg_file = None
-
-    def set_cfg(self, file_path):
-        """
-        Set file path of cfg_file
-        """
-        self.cfg_file = file_path
 
     def read_cfg(self):
         """
         read cfg file and update gpio_pins dict
         """
-        config = ConfigParser()
+        path = "%s/%s" % (PREFIX, self.gpio_cfg_path)
+        for root, dirs, files in os.walk(path):
+            for file_path in files:
+                pin = GpioPin(self.opt, "%s/%s" % (root, file_path))
+                pin.init_pin()
+                self.gpio_pins[pin.get_id()] = pin
+
+    def flip(self, pin_id):
+        """
+        flip the value of the given pin_identifier
+        """
+        assert pin_id in self.gpio_pins.keys()
+        self.gpio_pins[pin_id].flip()
+
+    def set_pin_cfg(self, pin_id, cfg_dic):
+        """
+        Change the config of one pin
+        """
+        assert pin_id in self.gpio_pins.keys()
+        self.gpio_pins[pin_id].set_cfg(cfg_dic)
+
+    def arange_pins(self):
+        """
+        check the pins for overlapping within groups
+        """
+        # for every group the
+        grp_times = {}
+        for pin in self.gpio_pins.values():
+            grp = pin.get_groups() 
+            if grp not in grp_times.keys():
+                grp_times[grp] = []
+            grp_times[grp].append(pin)
+        end = None
+        for grp, lst in grp_times.items():
+            lst.sort()
+            for item in lst:
+                # check times and change if neccessary
+                if end is not None and end > item.get_dt_on():
+                    # we have to set a new start and adjust the end
+                    item.set_cfg({'start': end.strftime("%H:%M")})
+                end = item.get_dt_off()
+
+    def trigger_pins(self, dt=None):
+        """
+        iterate over pins.
+        """
+        for pin in self.gpio_pins.values():
+            #-> first turn off
+            pin.trigger_off(dt)
+        for pin in self.gpio_pins.values():
+            # -> after turn on (to avoid overlapping)
+            pin.trigger_on(dt)
