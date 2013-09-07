@@ -20,6 +20,7 @@ PIN_MODES = {
     '3': 'sun'
 }
 
+
 def get_mode_id(mode):
     """
     reverse lookup of PIN_MODES
@@ -167,7 +168,7 @@ class GpioPin(object):
 
     def change_mode(self, mode_str):
         """
-        change mode 
+        change mode
         """
         for key, val in PIN_MODES.items():
             if val == mode_str:
@@ -302,10 +303,10 @@ class GpioPin(object):
         (std, minute) = self.start.split(":")
         now = datetime.datetime.now()
         temp_on = datetime.datetime(year=now.year,
-                        month=now.month,
-                        day=now.day,
-                        hour=int(std),
-                        minute=int(minute))
+                                    month=now.month,
+                                    day=now.day,
+                                    hour=int(std),
+                                    minute=int(minute))
         return temp_on
 
     def get_dt_off(self):
@@ -315,12 +316,12 @@ class GpioPin(object):
         (std, minute) = self.start.split(":")
         now = datetime.datetime.now()
         temp_on = datetime.datetime(year=now.year,
-                        month=now.month,
-                        day=now.day,
-                        hour=int(std),
-                        minute=int(minute))
+                                    month=now.month,
+                                    day=now.day,
+                                    hour=int(std),
+                                    minute=int(minute))
         offset = datetime.timedelta(0,
-                        minutes=int(self.duration))
+                                    minutes=int(self.duration))
         return temp_on + offset
 
     def trigger_off(self, dt=None):
