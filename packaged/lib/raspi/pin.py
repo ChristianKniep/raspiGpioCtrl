@@ -59,7 +59,7 @@ class GpioPin(object):
 
     def __eq__(self, other):
         """
-        compares to instances '=='
+        compares to instances ==
         """
         start = self.start == other.start
         prio = self.prio == other.prio

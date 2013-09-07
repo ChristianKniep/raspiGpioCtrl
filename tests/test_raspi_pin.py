@@ -465,6 +465,13 @@ class TestRaspiPin(unittest.TestCase):
             'prio': '0',
             'duration': '20',
         })
+        pin4 = GpioPin(self.opt)
+        pin4.set_cfg({
+            'pin_nr': '4',
+            'start': '00:00',
+            'prio': '0',
+            'duration': '30',
+        })
         amsg = "\n%s\n<=\n%s" % (pin0.get_json(), pin1.get_json())
         self.assertTrue(pin0.__le__(pin1), amsg)
         amsg = "\n%s\n<=\n%s" % (pin0.get_json(), pin2.get_json())
@@ -483,6 +490,8 @@ class TestRaspiPin(unittest.TestCase):
         self.assertFalse(pin2.__le__(pin0), amsg)
         amsg = "\n%s\n>\n%s" % (pin0.get_json(), pin3.get_json())
         self.assertFalse(pin3.__le__(pin0), amsg)
+        amsg = "\n%s\n !__le__ \n%s" % (pin4.get_json(), pin3.get_json())
+        self.assertFalse(pin4.__le__(pin3), amsg)
 
     def test7_4_gt(self):
         """
