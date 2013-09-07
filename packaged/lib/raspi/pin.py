@@ -40,7 +40,7 @@ class GpioPin(object):
         create object from cfg_file or empty one
         """
         self.opt = opt
-        self.gpio_base = "%s%s/sys/class/gpio" % (PREFIX, opt.root)
+        self.gpio_base = "%s%s/sys/class/gpio" % (PREFIX, opt['-r'])
         self.cfg_file = None
         self.crypt = None
         self.pin_nr = '0'
@@ -189,7 +189,7 @@ class GpioPin(object):
         Init pin
         """
         pin_name = "gpio%s" % self.pin_nr
-        if not self.opt.dry_run:
+        if not self.opt['--dry-run']:
             os.system("echo %s > %s" % (self.pin_nr, pfad))
             os.system("echo out > %s" % (pfad))
             self.set_pin(0)

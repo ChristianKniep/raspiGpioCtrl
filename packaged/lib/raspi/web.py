@@ -5,6 +5,7 @@ from ConfigParser import ConfigParser
 import sys
 from pprint import pprint
 from raspi.ctrl import GpioCtrl
+import re
 try:
     import cherrypy
 except ImportError:
@@ -23,7 +24,6 @@ class Web(object):
         self.gctrl = GpioCtrl(opt)
         self.gctrl.read_cfg()
         self.gpio_pins = self.gctrl.gpio_pins
-        pprint(self.gpio_pins)
         self.form_gpio = None
         self.form_on = None
         self.form_dow_Wed = None
@@ -40,12 +40,13 @@ class Web(object):
     def create_row(self, gpio):
         """ Erstellt Zeile fuer gpio-pin in Form eines Formulars
         """
+        pin_json = self.gpio_pins[gpio].get_json()
         self.html += """
             <tr>
             <form method="POST">
-                <td><b>%(id)s</b></td>""" % self.gpio_pins[gpio]
+                <td><b>%s</b></td>""" % gpio
         self.html += "<input type='hidden' name='gpio' value='%s'>" % gpio
-        if self.gpio_pins[gpio]['state'] == "0":
+        if pin_json['state'] == "0":
             state_col = 'red'
         else:
             state_col = 'green'
@@ -54,22 +55,22 @@ class Web(object):
         self.html += """
                 <td>"""
         for mode in ['time', 'sun', 'man']:
-            if self.gpio_pins[gpio]['mode'] == mode:
+            if pin_json['mode'] == mode:
                 checked = " checked"
             else:
                 checked = ""
             arg = (mode, checked, mode)
             self.html += """
-                    <input type="radio" name="mode" value="%s"%s>%s""" % args
+                    <input type="radio" name="mode" value="%s"%s>%s""" % arg
         self.html += """
                 </td>"""
         self.html += """
                 <td><input type="text" name="on" value="%(on)s" size="6">o'clock (24h)</td>
-                <td>""" % self.gpio_pins[gpio]
+                <td>""" % pin_json
         for dow in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']:
             checked = ""
-            if 'dow' in self.gpio_pins[gpio].keys() and \
-               re.match(".*%s.*" % dow, self.gpio_pins[gpio]['dow']):
+            if 'dow' in pin_json.keys() and \
+               re.match(".*%s.*" % dow, pin_json['dow']):
                 checked = " checked"
             self.html += "<input type='checkbox' name='dow_%s' value='%s'%s>%s" % (dow, dow, checked, dow)
         self.html += "</td>"
@@ -78,7 +79,7 @@ class Web(object):
                 <td><input type="text" name="sun_delay" value="%(sun_delay)s" size="5">min</td>
                 <td><input name="send" type="submit" value="change"></td>
             </form>
-            </tr>""" % self.gpio_pins[gpio]
+            </tr>""" % pin_json
 
     def create_tab(self):
         """ Creates table to show the different gpiopins

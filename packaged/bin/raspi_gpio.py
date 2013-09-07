@@ -1,5 +1,15 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
+"""
+Usage:
+    raspi_gpio.py [options]
+
+Options:
+  -h  --help  show this help message and exit
+  -d          Debug
+  --dry-run   dry run on !raspi creating gpio-path in `pwd`
+  -r=<root>   Root dir for config, lock-files, etc (def:/)
+"""
 
 # Bibliotheken laden
 import re
@@ -9,10 +19,9 @@ from pprint import pprint
 import sys
 #import datetime
 #import time
-import argparse
 #from libgpio import GpioCtrl, Parameter
 from raspi.web import Web
-from raspi.opt import ArgParameter
+from docopt import docopt
 try:
     import cherrypy
 except ImportError:
@@ -26,9 +35,8 @@ except ImportError:
 def main():
     """ main function """
     # Parameter
-    options = ArgParameter()
-    options = argparse.Namespace(debug=1, root="./", dry_run=True)
-    if options.dry_run:
+    options =  docopt(__doc__, version='0.1')
+    if options['--dry-run']:
         print "dry-run!"
     #    srv = GpioCtrl(options)
     #    srv.run_cronjob()

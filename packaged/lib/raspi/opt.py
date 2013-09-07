@@ -36,6 +36,8 @@ class ArgParameter(object):
         self.default()
         # copy over all class.attributes
         args = self.parser.parse_args()
+        for item in args:
+            print item
 
     def default(self):
         """
@@ -44,7 +46,7 @@ class ArgParameter(object):
         self.parser.add_argument("-d", action="count",
                                  dest="debug", help=help_msg)
         help_msg = "dry run on !raspi creating gpio-path in `pwd`"
-        self.parser.add_argument("--dry-run", dest="dry_run",
+        self.parser.add_argument("--dry-run", dest="dryrun",
                                  default=False, action="store_true",
                                  help=help_msg)
         help_msg = "Root dir for config, lock-files, etc (def:/)"

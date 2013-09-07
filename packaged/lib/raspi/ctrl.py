@@ -20,7 +20,7 @@ class GpioCtrl(object):
         init gpio
         """
         self.opt = opt
-        self.gpio_cfg_path = "%s/etc/raspigpioctrl/" % opt.root
+        self.gpio_cfg_path = "%s/etc/raspigpioctrl/" % opt['-r']
         self.gpio_pins = {}
 
     def read_cfg(self):
@@ -28,6 +28,7 @@ class GpioCtrl(object):
         read cfg file and update gpio_pins dict
         """
         path = "%s/%s" % (PREFIX, self.gpio_cfg_path)
+        print path
         for root, dirs, files in os.walk(path):
             for file_path in files:
                 pin = GpioPin(self.opt, "%s/%s" % (root, file_path))
