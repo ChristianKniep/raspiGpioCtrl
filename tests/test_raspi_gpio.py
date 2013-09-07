@@ -11,10 +11,13 @@ if not PREFIX.endswith("/"):
 
 class TestRaspiGpio(unittest.TestCase):
     def setUp(self):
-        self.opt = argparse.Namespace(debug=1, root="./packaged", dry_run=True)
+        self.opt = {
+            "-r":"packaged",
+            "--dry-run":True,
+        }
         self.skip_keys = ['opt']
         self.def_items = {
-            'gpio_cfg_path': "%s/etc/raspigpioctrl/" % (self.opt.root),
+            'gpio_cfg_path': "%s/etc/raspigpioctrl/" % (self.opt['-r']),
             'gpio_pins': {},
         }
 
@@ -67,7 +70,7 @@ class TestRaspiGpio(unittest.TestCase):
         """
         ctrl = GpioCtrl(self.opt)
         ctrl.read_cfg()
-        pincfg_path = "%s/%s/etc/raspigpioctrl/" % (PREFIX, self.opt.root)
+        pincfg_path = "%s/%s/etc/raspigpioctrl/" % (PREFIX, self.opt['-r'])
         pin1 = GpioPin(self.opt, "%s/pin1.cfg" % pincfg_path)
         pin2 = GpioPin(self.opt, "%s/pin2.cfg" % pincfg_path)
         pin3 = GpioPin(self.opt, "%s/pin3.cfg" % pincfg_path)
@@ -109,7 +112,7 @@ class TestRaspiGpio(unittest.TestCase):
         ctrl.set_pin_cfg('1', {'groups':''})
         ctrl.set_pin_cfg('2', {'groups':''})
         ctrl.set_pin_cfg('3', {'groups':''})
-        pincfg_path = "%s/%s/etc/raspigpioctrl/" % (PREFIX, self.opt.root)
+        pincfg_path = "%s/%s/etc/raspigpioctrl/" % (PREFIX, self.opt['-r'])
         pin1 = GpioPin(self.opt, "%s/pin1.cfg" % pincfg_path)
         pin1.set_cfg({'groups':''})
         pin2 = GpioPin(self.opt, "%s/pin2.cfg" % pincfg_path)
@@ -146,7 +149,7 @@ class TestRaspiGpio(unittest.TestCase):
                       'prio':'2',
                       'duration':'10',
                       })
-        pincfg_path = "%s/%s/etc/raspigpioctrl/" % (PREFIX, self.opt.root)
+        pincfg_path = "%s/%s/etc/raspigpioctrl/" % (PREFIX, self.opt['-r'])
         pin1 = GpioPin(self.opt, "%s/pin1.cfg" % pincfg_path)
         pin1.set_cfg({'groups':'a',
                       'start':'00:00',

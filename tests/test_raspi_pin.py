@@ -11,7 +11,11 @@ if not PREFIX.endswith("/"):
 
 class TestRaspiPin(unittest.TestCase):
     def setUp(self):
-        self.opt = argparse.Namespace(debug=1, root="packaged", dry_run=True)
+        self.opt = {
+            "-r":"packaged",
+            "--dry-run":True,
+            '-d':1,
+        }
         self.pin0 = GpioPin(self.opt)
         self.skip_keys = ['opt']
 
@@ -499,7 +503,6 @@ class TestRaspiPin(unittest.TestCase):
         Pin >7_4> self.__gt__(other)
         """
         lst = []
-        self.opt = argparse.Namespace(debug=2, root="packaged", dry_run=True)
         pin0 = GpioPin(self.opt)
         pin0.set_cfg({
             'pin_nr': '4',
@@ -555,7 +558,6 @@ class TestRaspiPin(unittest.TestCase):
         Pin >7_5> self.__ge__(other)
         """
         lst = []
-        self.opt = argparse.Namespace(debug=2, root="packaged", dry_run=True)
         pin0 = GpioPin(self.opt)
         pin0.set_cfg({
             'pin_nr': '4',

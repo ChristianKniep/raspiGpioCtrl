@@ -181,7 +181,7 @@ class GpioPin(object):
         """
         Print debug message
         """
-        if self.opt.debug >= dlevel:
+        if self.opt['-d'] >= dlevel:
             print "%s >> %s" % (dlevel, msg)
 
     def init_pin(self):
