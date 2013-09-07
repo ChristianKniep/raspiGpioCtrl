@@ -308,6 +308,7 @@ class TestRaspiPin(unittest.TestCase):
         self.assertTrue(pin.mode == "2")
         pin.change_mode("sun")
         self.assertTrue(pin.mode == "3")
+        self.assertTrue(get_mode_id("buh") is None)
 
     def test5_1_change_false_mode(self):
         """
@@ -527,6 +528,13 @@ class TestRaspiPin(unittest.TestCase):
             'prio': '0',
             'duration': '20',
         })
+        pin4 = GpioPin(self.opt)
+        pin4.set_cfg({
+            'pin_nr': '4',
+            'start': '00:00',
+            'prio': '1',
+            'duration': '20',
+        })
         amsg = "\n%s\n>\n%s" % (pin1.get_json(), pin0.get_json())
         self.assertTrue(pin1.__gt__(pin0), amsg)
         amsg = "\n%s\n>\n%s" % (pin2.get_json(), pin0.get_json())
@@ -539,6 +547,8 @@ class TestRaspiPin(unittest.TestCase):
         self.assertFalse(pin0.__gt__(pin0), amsg)
         amsg = "\n%s\n<\n%s" % (pin0.get_json(), pin1.get_json())
         self.assertFalse(pin0.__gt__(pin1), amsg)
+        amsg = "\n%s\n!__gt__\n%s" % (pin3.get_json(), pin4.get_json())
+        self.assertFalse(pin3.__gt__(pin4), amsg)
 
     def test7_5_ge(self):
         """
@@ -574,6 +584,13 @@ class TestRaspiPin(unittest.TestCase):
             'prio': '0',
             'duration': '20',
         })
+        pin4 = GpioPin(self.opt)
+        pin4.set_cfg({
+            'pin_nr': '4',
+            'start': '00:00',
+            'prio': '0',
+            'duration': '20',
+        })
         amsg = "\n%s\n>\n%s" % (pin1.get_json(), pin0.get_json())
         self.assertTrue(pin1.__ge__(pin0), amsg)
         amsg = "\n%s\n>\n%s" % (pin2.get_json(), pin0.get_json())
@@ -586,6 +603,10 @@ class TestRaspiPin(unittest.TestCase):
         self.assertTrue(pin0.__ge__(pin0), amsg)
         amsg = "\n%s\n<\n%s" % (pin0.get_json(), pin1.get_json())
         self.assertFalse(pin0.__ge__(pin1), amsg)
+        amsg = "\n%s\n__ge__\n%s" % (pin3.get_json(), pin4.get_json())
+        self.assertTrue(pin3.__ge__(pin4), amsg)
+        amsg = "\n%s\n!__ge__\n%s" % (pin3.get_json(), pin2.get_json())
+        self.assertFalse(pin3.__ge__(pin2), amsg)
 
     def test8_0_trigger(self):
         """

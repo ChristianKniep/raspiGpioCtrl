@@ -127,11 +127,11 @@ class GpioPin(object):
         """
         self >= other?
         """
-        if self.start >= other.start:
+        if self.start > other.start:
             return True
         elif self.start < other.start:
             return False
-        elif self.prio >= other.prio:
+        elif self.prio > other.prio:
             return True
         elif self.prio < other.prio:
             return False
