@@ -227,10 +227,10 @@ class GpioPin(object):
         write config to file - rereads if md5 has changed
         """
         crypt = None
-        assert self.cfg_file is not None
-        if cfg_file is not None:
-            # if a cfg was given, it will be set as default file
-            self.cfg_file = cfg_file
+        amsg = "if no cfg_file is given, the instance should already have one"
+        assert not ((cfg_file is None) and (self.cfg_file is None)), amsg
+        # if a cfg was given, it will be set as default file
+        self.cfg_file = cfg_file
 
         if os.path.exists(self.cfg_file):
             self.deb(self.cfg_file)
