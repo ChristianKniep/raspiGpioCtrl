@@ -29,6 +29,7 @@ class SunRise:
         self.coord = (lat, lon)
         self.day = None
         self.time = None
+        self.timezone = None
 
     def sunrise(self, when=datetime.now()):
         """
@@ -53,7 +54,7 @@ class SunRise:
         self.__calc()
         return SunRise.__timefromdecimalday(self.sunset_t)
 
-    def solarnoon(self,when=None):
+    def solarnoon(self, when=None):
         """
         datetime of solar noon
         """
@@ -71,9 +72,9 @@ class SunRise:
         """
         hours = 24.0 * day
         hour = int(hours)
-        minutes = (hours - h) * 60
+        minutes = (hours - hour) * 60
         minute = int(minutes)
-        seconds = (minutes - m) * 60
+        seconds = (minutes - minute) * 60
         second = int(seconds)
         res = time(hour=hour, minute=minute, second=second)
         return res
@@ -92,7 +93,7 @@ class SunRise:
         wtime = when.time()
         self.time = (wtime.hour + wtime.minute/60.0 + wtime.second/3600.0) / 24.0
 
-        self.timezone += 2 # Is this right?
+        self.timezone += 2  # Is this right?
         offset = when.utcoffset()
         if not offset is None:
             self.timezone = offset.seconds / 3600.0
@@ -107,27 +108,27 @@ class SunRise:
         # in hours, east is positive
         timezone = self.timezone
         latitude = self.coord[0]
-        longitude= self.coord[1]
+        longitude = self.coord[1]
 
         # percentage past midnight, i.e. noon  is 0.5
-        time = self.time
+        some_time = self.time
         # daynumber 1=1/1/1900
-        day = self.day
+        some_day = self.day
 
         # Julian day
-        Jday = day + 2415018.5 + time - (timezone / 24)
-        # Julian century
-        Jcent = (Jday - 2451545) / 36525
+        jday = some_day + 2415018.5 + some_time - (timezone / 24)
+        # Julian jentury
+        jcent = (jday - 2451545) / 36525
 
-        Manom = 357.52911 + Jcent * (35999.05029 - 0.0001537 * Jcent)
-        Mlong = 280.46646 + Jcent * (36000.76983 + Jcent * 0.0003032) % 360
-        Eccent = 0.016708634 - Jcent * (0.000042037 + 0.0001537 * Jcent)
-        Mobliq = 23 + (26 + ((21.448 - Jcent * (46.815 + Jcent * (0.00059 - Jcent * 0.001813)))) / 60) / 60
-        obliq = Mobliq + 0.00256 * cos(rad(125.04 - 1934.136 * Jcent))
+        Manom = 357.52911 + jcent * (35999.05029 - 0.0001537 * jcent)
+        Mlong = 280.46646 + jcent * (36000.76983 + jcent * 0.0003032) % 360
+        Eccent = 0.016708634 - jcent * (0.000042037 + 0.0001537 * jcent)
+        Mobliq = 23 + (26 + ((21.448 - jcent * (46.815 + jcent * (0.00059 - jcent * 0.001813)))) / 60) / 60
+        obliq = Mobliq + 0.00256 * cos(rad(125.04 - 1934.136 * jcent))
         vary = tan(rad(obliq / 2)) * tan(rad(obliq / 2))
-        Seqcent = sin(rad(Manom)) * (1.914602 - Jcent * (0.004817 + 0.000014 * Jcent)) + sin(rad(2 * Manom)) * (0.019993 - 0.000101 * Jcent) + sin(rad(3 * Manom)) * 0.000289
+        Seqcent = sin(rad(Manom)) * (1.914602 - jcent * (0.004817 + 0.000014 * jcent)) + sin(rad(2 * Manom)) * (0.019993 - 0.000101 * jcent) + sin(rad(3 * Manom)) * 0.000289
         Struelong = Mlong + Seqcent
-        Sapplong = Struelong - 0.00569-0.00478 * sin(rad(125.04 - (1934.136 * Jcent)))
+        Sapplong = Struelong - 0.00569-0.00478 * sin(rad(125.04 - (1934.136 * jcent)))
         declination = deg(asin(sin(rad(obliq)) * sin(rad(Sapplong))))
 
         eqtime = 4 * deg(vary * sin(2 * rad(Mlong)) - 2 * Eccent * sin(rad(Manom)) + 4 * Eccent * vary * sin(rad(Manom)) * cos(2 * rad(Mlong)) - 0.5 * vary * vary * sin(4 * rad(Mlong)) - 1.25 * Eccent * Eccent * sin(2 * rad(Manom)))
