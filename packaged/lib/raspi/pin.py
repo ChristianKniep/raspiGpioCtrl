@@ -7,6 +7,7 @@ import os
 import subprocess
 import md5
 import datetime
+import traceback
 
 PREFIX = os.environ.get("WORKSPACE", "./")
 if not PREFIX.endswith("/"):
@@ -56,23 +57,88 @@ class GpioPin(object):
             self.read_cfg()
         self.pin_base = "%s/gpio%s" % (self.gpio_base, self.pin_nr)
 
+    def __eq__(self, other):
+        """
+        compares to instances '=='
+        """
+        start = self.start == other.start
+        prio = self.prio == other.prio
+        duration = self.duration == other.duration
+        return start and prio and duration
+
+    def __ne__(self, other):
+        """
+        compares to instances '=='
+        """
+        return not self.__eq__(other)
+
     def __lt__(self, other):
         """
-        compares two instances of GpioPin
-        sort them according to there run time-frame and there prio
+        self < other?
         """
-        if self.get_dt_off() < other.get_dt_on():
-            # if end_time < other.start_time we are lower-then other
+        if self.start < other.start:
             return True
-        if self.get_dt_on() > other.get_dt_off():
-            # or the other way around, other is lower-then us
+        elif self.start > other.start:
             return False
-        if self.prio < other.prio:
+        elif self.prio < other.prio:
+            return True
+        elif self.prio > other.prio:
+            return False
+        elif self.duration < other.duration:
             return True
         else:
             return False
-        if self.prio == other.prio:
-            return self.get_dt_on() <= other.get_dt_on()
+
+    def __le__(self, other):
+        """
+        self <= other?
+        """
+        if self.start < other.start:
+            return True
+        elif self.start > other.start:
+            return False
+        elif self.prio < other.prio:
+            return True
+        elif self.prio > other.prio:
+            return False
+        elif self.duration <= other.duration:
+            return True
+        else:
+            return False
+
+    def __gt__(self, other):
+        """
+        self > other?
+        """
+        if self.start > other.start:
+            return True
+        elif self.start < other.start:
+            return False
+        elif int(self.prio) > int(other.prio):
+            return True
+        elif self.prio < other.prio:
+            return False
+        elif self.duration > other.duration:
+            return True
+        else:
+            return False
+
+    def __ge__(self, other):
+        """
+        self >= other?
+        """
+        if self.start >= other.start:
+            return True
+        elif self.start < other.start:
+            return False
+        elif self.prio >= other.prio:
+            return True
+        elif self.prio < other.prio:
+            return False
+        elif self.duration >= other.duration:
+            return True
+        else:
+            return False
 
     def get_id(self):
         """

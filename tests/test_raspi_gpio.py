@@ -172,76 +172,125 @@ class TestRaspiGpio(unittest.TestCase):
                 '3': pin3,
             }
         }
-        ctrl.arange_pins()
+        ctrl.arrange_pins()
         self.check(ctrl, exp_items)
 
     def test4_0_trigger_pin(self):
         """
         GpioCtrl >4_0> trigger pins
         """
+        now = datetime.datetime.now()
         ctrl = GpioCtrl(self.opt)
         ctrl.read_cfg()
-        ctrl.set_pin_cfg('1', {'groups':'a',
-                      'start':'00:00',
-                      'prio':'0',
-                      'duration':'10',
-                      })
-        ctrl.set_pin_cfg('2', {'groups':'a',
-                      'start':'00:10',
-                      'prio':'0',
-                      'duration':'10',
-                      })
-        ctrl.set_pin_cfg('3', {'groups':'a',
-                      'start':'00:25',
-                      'prio':'0',
-                      'duration':'10',
-                      })
+        cfg = {
+            'groups':'a',
+            'prio':'0',
+            'duration':'10',
+        }
+        ctrl.set_pin_cfg('1', cfg)
+        ctrl.set_pin_cfg('2', cfg)
+        ctrl.set_pin_cfg('3', cfg)
+        ctrl.set_pin_cfg('1', {'start':'00:00'})
+        ctrl.set_pin_cfg('2', {'start':'00:10'})
+        ctrl.set_pin_cfg('3', {'start':'00:25'})
+        # t0
+        dt = self.create_dt(0, 0)
+        ctrl.trigger_pins(dt)
+        mask = {'1': '1', '2': '0', '3': '0'}
+        self.check_pins(ctrl, mask)
+        # t1
+        dt = self.create_dt(11, 0)
+        ctrl.trigger_pins(dt)
+        mask = {'1': '0', '2': '1', '3': '0'}
+        self.check_pins(ctrl, mask)
+        # t2
+        dt = self.create_dt(21, 0)
+        ctrl.trigger_pins(dt)
+        mask = {'1': '0', '2': '0', '3': '0'}
+        self.check_pins(ctrl, mask)
+        # t3
+        dt = self.create_dt(30, 0)
+        ctrl.trigger_pins(dt)
+        mask = {'1': '0', '2': '0', '3': '1'}
+        self.check_pins(ctrl, mask)
+        # t4
+        dt = self.create_dt(37, 0)
+        ctrl.trigger_pins(dt)
+        mask = {'1': '0', '2': '0', '3': '0'}
+        self.check_pins(ctrl, mask)
+
+    def test5_0_iter_pins(self):
+        """
+        GpioCtrl >5_0> read cfg and iterate a couple of times over the pins
+        """
+        ctrl = GpioCtrl(self.opt)
+        ctrl.read_cfg()
+        cfg = {
+            'groups':'a',
+            'prio':'0',
+            'duration':'10',
+        }
+        ctrl.set_pin_cfg('1', cfg)
+        ctrl.set_pin_cfg('2', cfg)
+        ctrl.set_pin_cfg('3', cfg)
+        ctrl.set_pin_cfg('1', {'start':'00:05'})
+        ctrl.set_pin_cfg('2', {'start':'00:10'})
+        ctrl.set_pin_cfg('3', {'start':'00:15'})
+        print "### Before arrange"
+        for key, item  in ctrl.gpio_pins.items():
+            print key, item.get_dt_on(), item.get_dt_off()
+        ctrl.arrange_pins(True)
+        print "### After arrange"
+        for key, item  in ctrl.gpio_pins.items():
+            print key, item.get_dt_on(), item.get_dt_off()
+        # t0
+        dt = self.create_dt(5, 0)
+        ctrl.trigger_pins(dt)
+        mask = {'1': '1', '2': '0', '3': '0'}
+        self.check_pins(ctrl, mask)
+        # t1
+        dt = self.create_dt(16, 0)
+        ctrl.trigger_pins(dt)
+        mask = {'1': '0', '2': '1', '3': '0'}
+        self.check_pins(ctrl, mask)
+        # t2
+        dt = self.create_dt(25, 0)
+        ctrl.trigger_pins(dt)
+        mask = {'1': '0', '2': '0', '3': '1'}
+        self.check_pins(ctrl, mask)
+
+    @staticmethod
+    def create_dt(t_minute=None, t_hour=None,
+                  t_day=None, t_month=None, t_year=None):
+        """
+        returns datetime
+        """
         now = datetime.datetime.now()
-        dt = datetime.datetime(year=now.year,
-                        month=now.month,
-                        day=now.day,
-                        hour=0,
-                        minute=0)
-        ctrl.trigger_pins(dt)
-        self.assertTrue(ctrl.gpio_pins['1'].read_real_life() == '1')
-        self.assertTrue(ctrl.gpio_pins['2'].read_real_life() == '0')
-        self.assertTrue(ctrl.gpio_pins['3'].read_real_life() == '0')
-        dt = datetime.datetime(year=now.year,
-                        month=now.month,
-                        day=now.day,
-                        hour=0,
-                        minute=11)
-        ctrl.trigger_pins(dt)
-        self.assertTrue(ctrl.gpio_pins['1'].read_real_life() == '0')
-        self.assertTrue(ctrl.gpio_pins['2'].read_real_life() == '1')
-        self.assertTrue(ctrl.gpio_pins['3'].read_real_life() == '0')
-        dt = datetime.datetime(year=now.year,
-                        month=now.month,
-                        day=now.day,
-                        hour=0,
-                        minute=21)
-        ctrl.trigger_pins(dt)
-        self.assertTrue(ctrl.gpio_pins['1'].read_real_life() == '0')
-        self.assertTrue(ctrl.gpio_pins['2'].read_real_life() == '0')
-        self.assertTrue(ctrl.gpio_pins['3'].read_real_life() == '0')
-        dt = datetime.datetime(year=now.year,
-                        month=now.month,
-                        day=now.day,
-                        hour=0,
-                        minute=30)
-        ctrl.trigger_pins(dt)
-        self.assertTrue(ctrl.gpio_pins['1'].read_real_life() == '0')
-        self.assertTrue(ctrl.gpio_pins['2'].read_real_life() == '0')
-        self.assertTrue(ctrl.gpio_pins['3'].read_real_life() == '1')
-        dt = datetime.datetime(year=now.year,
-                        month=now.month,
-                        day=now.day,
-                        hour=0,
-                        minute=37)
-        ctrl.trigger_pins(dt)
-        self.assertTrue(ctrl.gpio_pins['1'].read_real_life() == '0')
-        self.assertTrue(ctrl.gpio_pins['2'].read_real_life() == '0')
-        self.assertTrue(ctrl.gpio_pins['3'].read_real_life() == '0')
+        if t_minute is None:
+            t_minute = now.minute 
+        if t_hour is None:
+            t_hour = now.hour 
+        if t_day is None:
+            t_day = now.day 
+        if t_month is None:
+            t_month = now.month 
+        if t_year is None:
+            t_year = now.year
+        dt = datetime.datetime(year=t_year,
+                        month=t_month,
+                        day=t_day,
+                        hour=t_hour,
+                        minute=t_minute)
+        return dt
+
+    def check_pins(self, ctrl, mask):
+        """
+        check states of mask pins
+        """
+        for key, val in mask.items():
+            got = ctrl.gpio_pins[key].read_real_life()
+            amsg = "gpio%s>> EXP:%s GOT:%s" % (key, val, got)
+            self.assertTrue(got == val, amsg)
 
 
 if __name__ == '__main__':

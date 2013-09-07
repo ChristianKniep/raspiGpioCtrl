@@ -3,6 +3,8 @@
 
 from ConfigParser import ConfigParser
 import sys
+from pprint import pprint
+from raspi.ctrl import GpioCtrl
 try:
     import cherrypy
 except ImportError:
@@ -18,8 +20,8 @@ class Web(object):
     """
     def __init__(self, opt):
         self.opt = opt
-        self.cfg_file = "/etc/raspi_gpio.cfg"
         self.gctrl = GpioCtrl(opt)
+        self.gctrl.read_cfg()
         self.gpio_pins = self.gctrl.gpio_pins
         pprint(self.gpio_pins)
         self.form_gpio = None
@@ -121,7 +123,8 @@ class Web(object):
         """
         self.create_tab()
         self.html += """
-        </table></body></html>
+        </table>
+        </body></html>
         """
         return self.html
 

@@ -11,7 +11,8 @@ import sys
 #import time
 import argparse
 #from libgpio import GpioCtrl, Parameter
-from raspi import Web, ArgParameter
+from raspi.web import Web
+from raspi.opt import ArgParameter
 try:
     import cherrypy
 except ImportError:
@@ -32,10 +33,10 @@ def main():
     #    srv = GpioCtrl(options)
     #    srv.run_cronjob()
     #if options.get("run_webserver"):
-    #    cherrypy.config.update(
-    #        {'server.socket_port': int(options.get("web_port")),}
-    #        )
-    #    cherrypy.quickstart(Web(options))
+    cherrypy.config.update(
+        {'server.socket_port': 8888 ,} 
+        )
+    cherrypy.quickstart(Web(options))
 
 
 # ein Aufruf von main() ganz unten

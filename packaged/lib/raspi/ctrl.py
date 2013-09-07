@@ -47,7 +47,7 @@ class GpioCtrl(object):
         assert pin_id in self.gpio_pins.keys()
         self.gpio_pins[pin_id].set_cfg(cfg_dic)
 
-    def arange_pins(self):
+    def arrange_pins(self, debug=False):
         """
         check the pins for overlapping within groups
         """

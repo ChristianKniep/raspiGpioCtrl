@@ -324,9 +324,71 @@ class TestRaspiPin(unittest.TestCase):
         pin1 = GpioPin(self.opt, test1_file)
         self.assertTrue(pin1.get_id() == "1")
 
-    def test7_0_less_then(self):
+    def test7_0_eq(self):
         """
-        Pin >7_0> pin.__lt__() Order according to timeslot
+        Pin >7_0> self.__eq__(other) True
+        """
+        lst = []
+        pin0 = GpioPin(self.opt)
+        pin0.set_cfg({
+            'pin_nr': '4',
+            'start': '00:10',
+            'prio': '0',
+            'duration': '10',
+        })
+        pin1 = GpioPin(self.opt)
+        pin1.set_cfg({
+            'pin_nr': '3',
+            'start': '00:10',
+            'prio': '0',
+            'duration': '10',
+        })
+        pin2 = GpioPin(self.opt)
+        pin2.set_cfg({
+            'pin_nr': '3',
+            'start': '00:20',
+            'prio': '0',
+            'duration': '10',
+        })
+        amsg = "\n%s\n!=\n%s" % (pin0.get_json(), pin1.get_json())
+        self.assertTrue(pin0.__eq__(pin1), amsg)
+        amsg = "\n%s\n==\n%s" % (pin0.get_json(), pin2.get_json())
+        self.assertFalse(pin0.__eq__(pin2))
+
+    def test7_1_ne(self):
+        """
+        Pin >7_1> self.__ne__(other) True
+        """
+        lst = []
+        pin0 = GpioPin(self.opt)
+        pin0.set_cfg({
+            'pin_nr': '4',
+            'start': '00:10',
+            'prio': '0',
+            'duration': '10',
+        })
+        pin1 = GpioPin(self.opt)
+        pin1.set_cfg({
+            'pin_nr': '3',
+            'start': '00:10',
+            'prio': '0',
+            'duration': '10',
+        })
+        pin2 = GpioPin(self.opt)
+        pin2.set_cfg({
+            'pin_nr': '3',
+            'start': '00:20',
+            'prio': '0',
+            'duration': '10',
+        })
+        amsg = "\n%s\n!=\n%s" % (pin0.get_json(), pin1.get_json())
+        self.assertFalse(pin0.__ne__(pin1), amsg)
+        amsg = "\n%s\n==\n%s" % (pin0.get_json(), pin2.get_json())
+        self.assertTrue(pin0.__ne__(pin2))
+
+    def test7_2_lt(self):
+        """
+        Pin >7_2> self.__lt__(other)
         """
         lst = []
         pin0 = GpioPin(self.opt)
@@ -345,80 +407,176 @@ class TestRaspiPin(unittest.TestCase):
         })
         pin2 = GpioPin(self.opt)
         pin2.set_cfg({
-            'pin_nr': '2',
-            'start': '00:20',
-            'prio': '0',
+            'pin_nr': '3',
+            'start': '00:00',
+            'prio': '1',
             'duration': '10',
         })
         pin3 = GpioPin(self.opt)
         pin3.set_cfg({
-            'pin_nr': '1',
-            'start': '00:30',
+            'pin_nr': '3',
+            'start': '00:00',
             'prio': '0',
-            'duration': '10',
+            'duration': '20',
         })
-        lst.append(pin1)
-        lst.append(pin3)
-        lst.append(pin0)
-        lst.append(pin2)
-        got = ""
-        for item in lst:
-            got += item.get_id()
-        exp = "3142"
-        self.assertTrue(got == exp)
-        lst.sort()
-        got = ""
-        for item in lst:
-            got += item.get_id()
-        exp = "4321"
+        amsg = "\n%s\n<\n%s" % (pin0.get_json(), pin1.get_json())
+        self.assertTrue(pin0.__lt__(pin1), amsg)
+        amsg = "\n%s\n<\n%s" % (pin0.get_json(), pin2.get_json())
+        self.assertTrue(pin0.__lt__(pin2), amsg)
+        amsg = "\n%s\n<\n%s" % (pin0.get_json(), pin3.get_json())
+        self.assertTrue(pin0.__lt__(pin3), amsg)
+        amsg = "\n%s\n>\n%s" % (pin0.get_json(), pin1.get_json())
+        self.assertFalse(pin1.__lt__(pin0), amsg)
+        amsg = "\n%s\n>\n%s" % (pin0.get_json(), pin2.get_json())
+        self.assertFalse(pin2.__lt__(pin0), amsg)
+        amsg = "\n%s\n<\n%s" % (pin0.get_json(), pin3.get_json())
+        self.assertFalse(pin3.__lt__(pin0), amsg)
 
-    def test7_1_less_then(self):
+    def test7_3_le(self):
         """
-        Pin >7_1> Compare two pins, check prio ordering
+        Pin >7_3> self.__le__(other)
         """
         lst = []
         pin0 = GpioPin(self.opt)
         pin0.set_cfg({
             'pin_nr': '4',
             'start': '00:00',
-            'prio': '1',
+            'prio': '0',
             'duration': '10',
         })
         pin1 = GpioPin(self.opt)
         pin1.set_cfg({
             'pin_nr': '3',
-            'start': '00:00',
-            'prio': '2',
+            'start': '00:10',
+            'prio': '0',
             'duration': '10',
         })
         pin2 = GpioPin(self.opt)
         pin2.set_cfg({
-            'pin_nr': '2',
+            'pin_nr': '3',
             'start': '00:00',
-            'prio': '3',
+            'prio': '1',
             'duration': '10',
         })
         pin3 = GpioPin(self.opt)
         pin3.set_cfg({
-            'pin_nr': '1',
+            'pin_nr': '3',
             'start': '00:00',
-            'prio': '4',
+            'prio': '0',
+            'duration': '20',
+        })
+        amsg = "\n%s\n<=\n%s" % (pin0.get_json(), pin1.get_json())
+        self.assertTrue(pin0.__le__(pin1), amsg)
+        amsg = "\n%s\n<=\n%s" % (pin0.get_json(), pin2.get_json())
+        self.assertTrue(pin0.__le__(pin2), amsg)
+        amsg = "\n%s\n<=\n%s" % (pin0.get_json(), pin3.get_json())
+        self.assertTrue(pin0.__le__(pin3), amsg)
+        amsg = "\n%s\n<=\n%s" % (pin0.get_json(), pin1.get_json())
+        self.assertTrue(pin1.__le__(pin1), amsg)
+        amsg = "\n%s\n<=\n%s" % (pin0.get_json(), pin2.get_json())
+        self.assertTrue(pin2.__le__(pin2), amsg)
+        amsg = "\n%s\n<=\n%s" % (pin0.get_json(), pin3.get_json())
+        self.assertTrue(pin3.__le__(pin3), amsg)
+        amsg = "\n%s\n>=\n%s" % (pin0.get_json(), pin1.get_json())
+        self.assertFalse(pin1.__le__(pin0), amsg)
+        amsg = "\n%s\n>\n%s" % (pin0.get_json(), pin2.get_json())
+        self.assertFalse(pin2.__le__(pin0), amsg)
+        amsg = "\n%s\n>\n%s" % (pin0.get_json(), pin3.get_json())
+        self.assertFalse(pin3.__le__(pin0), amsg)
+
+    def test7_4_gt(self):
+        """
+        Pin >7_4> self.__gt__(other)
+        """
+        lst = []
+        self.opt = argparse.Namespace(debug=2, root="packaged", dry_run=True)
+        pin0 = GpioPin(self.opt)
+        pin0.set_cfg({
+            'pin_nr': '4',
+            'start': '00:00',
+            'prio': '0',
             'duration': '10',
         })
-        lst.append(pin1)
-        lst.append(pin3)
-        lst.append(pin0)
-        lst.append(pin2)
-        got = ""
-        for item in lst:
-            got += item.get_id()
-        exp = "3142"
-        self.assertTrue(got == exp)
-        lst.sort()
-        got = ""
-        for item in lst:
-            got += item.get_id()
-        exp = "4321"
+        pin1 = GpioPin(self.opt)
+        pin1.set_cfg({
+            'pin_nr': '3',
+            'start': '00:10',
+            'prio': '0',
+            'duration': '10',
+        })
+        pin2 = GpioPin(self.opt)
+        pin2.set_cfg({
+            'pin_nr': '3',
+            'start': '00:00',
+            'prio': '1',
+            'duration': '10',
+        })
+        pin3 = GpioPin(self.opt)
+        pin3.set_cfg({
+            'pin_nr': '3',
+            'start': '00:00',
+            'prio': '0',
+            'duration': '20',
+        })
+        amsg = "\n%s\n>\n%s" % (pin1.get_json(), pin0.get_json())
+        self.assertTrue(pin1.__gt__(pin0), amsg)
+        amsg = "\n%s\n>\n%s" % (pin2.get_json(), pin0.get_json())
+        self.assertTrue(pin2.__gt__(pin0), amsg)
+        amsg = "\n%s\n>\n%s" % (pin0.get_json(), pin0.get_json())
+        self.assertTrue(pin3.__gt__(pin0), amsg)
+        amsg = "\n%s\n<\n%s" % (pin0.get_json(), pin1.get_json())
+        self.assertFalse(pin0.__gt__(pin1), amsg)
+        amsg = "\n%s\n<\n%s" % (pin0.get_json(), pin0.get_json())
+        self.assertFalse(pin0.__gt__(pin0), amsg)
+        amsg = "\n%s\n<\n%s" % (pin0.get_json(), pin1.get_json())
+        self.assertFalse(pin0.__gt__(pin1), amsg)
+
+    def test7_5_ge(self):
+        """
+        Pin >7_5> self.__ge__(other)
+        """
+        lst = []
+        self.opt = argparse.Namespace(debug=2, root="packaged", dry_run=True)
+        pin0 = GpioPin(self.opt)
+        pin0.set_cfg({
+            'pin_nr': '4',
+            'start': '00:00',
+            'prio': '0',
+            'duration': '10',
+        })
+        pin1 = GpioPin(self.opt)
+        pin1.set_cfg({
+            'pin_nr': '3',
+            'start': '00:10',
+            'prio': '0',
+            'duration': '10',
+        })
+        pin2 = GpioPin(self.opt)
+        pin2.set_cfg({
+            'pin_nr': '3',
+            'start': '00:00',
+            'prio': '1',
+            'duration': '10',
+        })
+        pin3 = GpioPin(self.opt)
+        pin3.set_cfg({
+            'pin_nr': '3',
+            'start': '00:00',
+            'prio': '0',
+            'duration': '20',
+        })
+        amsg = "\n%s\n>\n%s" % (pin1.get_json(), pin0.get_json())
+        self.assertTrue(pin1.__ge__(pin0), amsg)
+        amsg = "\n%s\n>\n%s" % (pin2.get_json(), pin0.get_json())
+        self.assertTrue(pin2.__ge__(pin0), amsg)
+        amsg = "\n%s\n>\n%s" % (pin0.get_json(), pin0.get_json())
+        self.assertTrue(pin3.__ge__(pin0), amsg)
+        amsg = "\n%s\n<\n%s" % (pin0.get_json(), pin1.get_json())
+        self.assertFalse(pin0.__ge__(pin1), amsg)
+        amsg = "\n%s\n<\n%s" % (pin0.get_json(), pin0.get_json())
+        self.assertTrue(pin0.__ge__(pin0), amsg)
+        amsg = "\n%s\n<\n%s" % (pin0.get_json(), pin1.get_json())
+        self.assertFalse(pin0.__ge__(pin1), amsg)
 
     def test8_0_trigger(self):
         """
@@ -426,11 +584,8 @@ class TestRaspiPin(unittest.TestCase):
         """
         pin = GpioPin(self.opt)
         now = datetime.datetime.now()
-        temp_on = datetime.datetime(year=now.year,
-                        month=now.month,
-                        day=now.day,
-                        hour=now.hour,
-                        minute=now.minute - 10)
+        delay = datetime.timedelta(seconds=600)
+        temp_on = now - delay
         cfg = {
             'start': temp_on.strftime("%H:%M"),
             'duration': '5',
@@ -456,11 +611,8 @@ class TestRaspiPin(unittest.TestCase):
         """
         pin = GpioPin(self.opt)
         now = datetime.datetime.now()
-        temp_on = datetime.datetime(year=now.year,
-                        month=now.month,
-                        day=now.day,
-                        hour=now.hour,
-                        minute=now.minute + 1)
+        delay = datetime.timedelta(seconds=60)
+        temp_on = now + delay
         cfg = {
             'start': now.strftime("%H:%M"),
             'duration': '5',
