@@ -8,8 +8,7 @@ http://michelanders.blogspot.fr/2010/12/<br>
 
 from math import cos, sin, acos, asin, tan
 from math import degrees as deg, radians as rad
-from datetime import date, datetime, time
-
+from datetime import datetime, time
 
 
 class SunRise:
@@ -28,6 +27,8 @@ class SunRise:
         Instanciate class, by default set Suderburg, Germany as base
         """
         self.coord = (lat, lon)
+        self.day = None
+        self.time = None
 
     def sunrise(self, when=datetime.now()):
         """
@@ -36,21 +37,28 @@ class SunRise:
         a local time zone is assumed (including daylight saving
         if present)
         """
-        if when is None :
+        if when is None:
             when = datetime.now()
         self.__preptime(when)
         self.__calc()
         return SunRise.__timefromdecimalday(self.sunrise_t)
 
     def sunset(self, when=None):
-        if when is None :
+        """
+        returns datetime when sun will set
+        """
+        if when is None:
             when = datetime.now()
         self.__preptime(when)
         self.__calc()
         return SunRise.__timefromdecimalday(self.sunset_t)
 
     def solarnoon(self,when=None):
-        if when is None : when = datetime.now()
+        """
+        datetime of solar noon
+        """
+        if when is None:
+            when = datetime.now()
         self.__preptime(when)
         self.__calc()
         return SunRise.__timefromdecimalday(self.solarnoon_t)
@@ -61,30 +69,30 @@ class SunRise:
         returns a datetime.time object.
         day is a decimal day between 0.0 and 1.0, e.g. noon = 0.5
         """
-        hours  = 24.0 * day
-        h = int(hours)
-        minutes= (hours - h) * 60
-        m = int(minutes)
-        seconds= (minutes - m) * 60
-        s = int(seconds)
-        res = time(hour=h, minute=m, second=s)
+        hours = 24.0 * day
+        hour = int(hours)
+        minutes = (hours - h) * 60
+        minute = int(minutes)
+        seconds = (minutes - m) * 60
+        second = int(seconds)
+        res = time(hour=hour, minute=minute, second=second)
         return res
 
-    def __preptime(self,when):
+    def __preptime(self, when):
         """
-        Extract information in a suitable format from when, 
+        Extract information in a suitable format from when,
         a datetime.datetime object.
         """
         # datetime days are numbered in the Gregorian calendar
         # while the calculations from NOAA are distibuted as
         # OpenOffice spreadsheets with days numbered from
-        # 1/1/1900. The difference are those numbers taken for 
+        # 1/1/1900. The difference are those numbers taken for
         # 18/12/2010
         self.day = when.toordinal() - (734124 - 40529)
-        t=when.time()
-        self.time = (t.hour + t.minute/60.0 + t.second/3600.0) / 24.0
-        
-        self.timezone =+ 2 # Is this right?
+        wtime = when.time()
+        self.time = (wtime.hour + wtime.minute/60.0 + wtime.second/3600.0) / 24.0
+
+        self.timezone += 2 # Is this right?
         offset = when.utcoffset()
         if not offset is None:
             self.timezone = offset.seconds / 3600.0
@@ -96,14 +104,18 @@ class SunRise:
         The results are stored in the instance variables
         sunrise_t, sunset_t and solarnoon_t
         """
-        timezone = self.timezone # in hours, east is positive
+        # in hours, east is positive
+        timezone = self.timezone
         latitude = self.coord[0]
         longitude= self.coord[1]
 
-        time = self.time # percentage past midnight, i.e. noon  is 0.5
-        day = self.day     # daynumber 1=1/1/1900
+        # percentage past midnight, i.e. noon  is 0.5
+        time = self.time
+        # daynumber 1=1/1/1900
+        day = self.day
 
-        Jday = day + 2415018.5 + time - (timezone / 24) # Julian day
+        # Julian day
+        Jday = day + 2415018.5 + time - (timezone / 24)
         # Julian century
         Jcent = (Jday - 2451545) / 36525
 
