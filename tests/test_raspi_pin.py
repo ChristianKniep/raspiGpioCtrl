@@ -589,7 +589,7 @@ class TestRaspiPin(unittest.TestCase):
             'pin_nr': '4',
             'start': '00:00',
             'prio': '0',
-            'duration': '20',
+            'duration': '10',
         })
         amsg = "\n%s\n>\n%s" % (pin1.get_json(), pin0.get_json())
         self.assertTrue(pin1.__ge__(pin0), amsg)
@@ -607,6 +607,8 @@ class TestRaspiPin(unittest.TestCase):
         self.assertTrue(pin3.__ge__(pin4), amsg)
         amsg = "\n%s\n!__ge__\n%s" % (pin3.get_json(), pin2.get_json())
         self.assertFalse(pin3.__ge__(pin2), amsg)
+        amsg = "\n%s\n!__ge__\n%s" % (pin4.get_json(), pin3.get_json())
+        self.assertFalse(pin4.__ge__(pin3), amsg)
 
     def test8_0_trigger(self):
         """
