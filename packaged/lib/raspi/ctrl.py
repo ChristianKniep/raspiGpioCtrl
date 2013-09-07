@@ -10,6 +10,7 @@ PREFIX = os.environ.get("WORKSPACE", "./")
 if not PREFIX.endswith("/"):
     PREFIX += "/"
 
+
 class GpioCtrl(object):
     """
     Controller of raspberry gpio pins
@@ -19,7 +20,7 @@ class GpioCtrl(object):
         init gpio
         """
         self.opt = opt
-        self.gpio_cfg_path = "%s/etc/raspigpioctrl/" % opt.root 
+        self.gpio_cfg_path = "%s/etc/raspigpioctrl/" % opt.root
         self.gpio_pins = {}
 
     def read_cfg(self):
@@ -54,7 +55,7 @@ class GpioCtrl(object):
         # for every group the
         grp_times = {}
         for pin in self.gpio_pins.values():
-            grp = pin.get_groups() 
+            grp = pin.get_groups()
             if grp not in grp_times.keys():
                 grp_times[grp] = []
             grp_times[grp].append(pin)
