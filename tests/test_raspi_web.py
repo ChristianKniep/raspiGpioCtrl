@@ -18,7 +18,7 @@ class TestRaspiWeb(unittest.TestCase):
         """
         exp = ""
         web = Web(self.opt)
-        
+
 
 if __name__ == '__main__':
     unittest.main()
