@@ -19,9 +19,6 @@ class TestRaspiPin(unittest.TestCase):
         self.pin0 = GpioPin(self.opt)
         self.skip_keys = ['opt']
 
-    def teardown(self):
-        print ("TestUM:teardown() after each test method")
-
     def check_dict(self, pin, exp_items):
         """
         check __dict__ for expected items

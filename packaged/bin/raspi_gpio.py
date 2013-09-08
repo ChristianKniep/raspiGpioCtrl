@@ -8,6 +8,7 @@ Options:
   -h  --help  show this help message and exit
   -d          Debug
   --dry-run   dry run on !raspi creating gpio-path in `pwd`
+  --no-read   Do not read cfg files within etc/...
   -r=<root>   Root dir for config, lock-files, etc (def:/)
 """
 

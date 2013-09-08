@@ -23,6 +23,12 @@ class GpioCtrl(object):
         self.gpio_cfg_path = "%s/etc/raspigpioctrl/" % opt['-r']
         self.gpio_pins = {}
 
+    def add_pin(self, pin):
+        """
+        add pin to ctrl instance
+        """
+        self.gpio_pins[pin.get_id()] = pin
+
     def read_cfg(self, force_init=True):
         """
         read cfg file and update gpio_pins dict
@@ -33,7 +39,6 @@ class GpioCtrl(object):
                 pin = GpioPin(self.opt, "%s/%s" % (root, file_path))
                 pin.init_pin(force_init)
                 self.gpio_pins[pin.get_id()] = pin
-                print pin.get_json()
 
     def flip(self, pin_id):
         """

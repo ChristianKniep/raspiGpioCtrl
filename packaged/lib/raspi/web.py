@@ -18,63 +18,81 @@ class Web(object):
     def __init__(self, opt):
         self.opt = opt
         self.gctrl = GpioCtrl(opt)
-        self.gctrl.read_cfg()
+        if not self.opt['--no-read']:
+            self.gctrl.read_cfg()
         self.gpio_pins = self.gctrl.gpio_pins
         self.form = {}
+        self.html = []
+
+    def add_pin(self, pin):
+        """
+        Add pin to GpioCtrl
+        """
+        self.gctrl.add_pin(pin)
 
     def create_row(self, gpio):
         """ Erstellt Zeile fuer gpio-pin in Form eines Formulars
         """
         pin_json = self.gpio_pins[gpio].get_json()
         pin_json['pinid'] = gpio
-        self.html += """
-            <tr>
-            <form method="POST">
-                <td><b>%(pin_nr)s</b></td>
-                <td><b>%(pinid)s</b></td>
-                <td><b>%(groups)s</b></td>""" % pin_json
-        self.html += "<input type='hidden' name='gpio' value='%s'>" % gpio
+        self.html.extend(["<tr>",
+            '<form method="POST">',
+            "<td><b>%(pin_nr)s</b></td>" % pin_json,
+            "<td><b>%(pinid)s</b></td>" % pin_json,
+            "<td><b>%(groups)s</b></td>" % pin_json,
+            ])
+        self.html.append("<input type='hidden' name='gpio' value='%s'>" % gpio)
         if pin_json['state'] == "0":
             state_col = 'red'
         else:
             state_col = 'green'
-        self.html += "<td style='background-color:%s'>" % state_col
-        self.html += "<input name='send' type='submit' value='flip'></td>"
-        self.html += """
-                <td>"""
+        self.html.append("<td style='background-color:%s'>" % state_col)
+        self.html.append("<input name='send' type='submit' value='flip'></td>")
+        self.html.append("<td>")
         for mode in ['time', 'sun', 'man']:
             if pin_json['mode'] == mode:
                 checked = " checked"
             else:
                 checked = ""
             arg = (mode, checked, mode)
-            self.html += """
-                    <input type="radio" name="mode" value="%s"%s>%s""" % arg
-        self.html += "<td><select name='prio'>"
+            self.html.append("<input type='radio' name='mode' value='%s'%s>%s" % arg)
+        self.html.append("<td><select name='prio'>")
         for prio in range(0,5):
-            self.html += "<option value='%s'" % prio
+            html = "<option value='%s'" % prio
             if pin_json['prio'] == str(prio):
-                self.html += "selected"
-            self.html += ">%s</option>" % prio
-        self.html += "</select></td>"
-        self.html += """
-                </td>"""
-        self.html += """
-                <td><input type="text" name="start" value="%(start)s" size="6">o'clock (24h)</td>
-                <td>""" % pin_json
+                html += "selected"
+            html += ">%s</option>" % prio
+            self.html.append(html)
+        self.html.append("</select></td>")
+        self.html.append("</td>")
+        html_line = "<td><input type='text' name='start' "
+        html_line += "value='%(start)s' size='6'>o'clock (24h)</td>" % pin_json
+        self.html.extend([
+            html_line,
+            "<td>",
+            ])
         for dow in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']:
             checked = ""
             if 'dow' in pin_json.keys() and \
                re.match(".*%s.*" % dow, pin_json['dow'], re.I):
                 checked = " checked"
-            self.html += "<input type='checkbox' name='dow_%s' value='%s'%s>%s" % (dow, dow, checked, dow)
-        self.html += "</td>"
-        self.html += """
-                <td><input type="text" name="duration" value="%(duration)s" size="5">min</td>
-                <td><input type="text" name="sun_delay" value="%(sun_delay)s" size="5">min</td>
-                <td><input name="send" type="submit" value="change"></td>
-            </form>
-            </tr>""" % pin_json
+            html_line = "<input type='checkbox' name='dow_"
+            html_line += "%s' value='%s'%s>%s" % (dow, dow, checked, dow)
+            self.html.append(html_line)
+        self.html.append("</td>")
+        
+        html_line = "<td><input type='text' name='duration' "
+        html_line += "value='%(duration)s' size='5'>min</td>" % pin_json
+        self.html.append(html_line)
+        html_line = "<td><input type='text' name='sun_delay' "
+        html_line += "value='%(sun_delay)s' size='5'>min</td>" % pin_json
+        self.html.append(html_line)
+        html_line = "<td><input name='send' type='submit' value='change'></td>"
+        self.html.extend([
+            html_line,
+            "</form>",
+            "</tr>",
+            ])
 
     def create_tab(self):
         """ Creates table to show the different gpiopins
@@ -109,29 +127,27 @@ class Web(object):
             'mode': mode,
         }
             self.change()
-        self.html = """
-        <html><head>
-                <title>web.py</title>
-        </head><body><table border="1">
-            <tr align="center">
-                <td>GpioNr</td>
-                <td>PinID</td>
-                <td>Groups</td>
-                <td>Prio</td>
-                <td>Status</td>
-                <td>Modus</td>
-                <td>An um</td>
-                <td>Wochentage</td>
-                <td>Dauer</td>
-                <td>Sonnenverzoegerung</td>
-            </tr>
-        """
+        self.html.extend([
+            "<html><head>",
+            "<title>web.py</title>"
+            '</head><body><table border="1">',
+            '<tr align="center">',
+                '<td>GpioNr</td>',
+                '<td>PinID</td>',
+                '<td>Groups</td>',
+                '<td>Prio</td>',
+                '<td>Status</td>',
+                '<td>Modus</td>',
+                '<td>An um</td>',
+                '<td>Wochentage</td>',
+                '<td>Dauer</td>',
+                '<td>Sonnenverzoegerung</td>',
+            '</tr>',
+            ])
         self.create_tab()
-        self.html += """
-        </table>
-        </body></html>
-        """
-        return self.html
+        self.html.append("</table>")
+        self.html.append("</body></html>")
+        return "\n".join(self.html)
 
     def change(self):
         """
