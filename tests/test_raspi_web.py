@@ -1,17 +1,24 @@
 import unittest
 import argparse
 from raspi.web import Web
-from raspi.ctrl import GpioCtrl
+import cherrypy
 
-class TestRaspiGpio(unittest.TestCase):
+class TestRaspiWeb(unittest.TestCase):
 
     def setUp(self):
-        self.opt = argparse.Namespace(debug=1, root=".", dry_run=True)
-        self.web = Web(self.opt)
+        self.opt = {
+            "-r":"packaged",
+            "--dry-run":True,
+            '-d':1,
+        }
 
-    def teardown(self):
-        print ("TestUM:teardown() after each test method")
-
+    def test0_0_init(self):
+        """
+        Web >0_0> fire up web class
+        """
+        exp = ""
+        web = Web(self.opt)
+        
 
 if __name__ == '__main__':
     unittest.main()
