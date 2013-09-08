@@ -26,18 +26,19 @@ class TestRaspiPin(unittest.TestCase):
         """
         check __dict__ for expected items
         """
+        exp = exp_items.copy()
         for key, val in pin.__dict__.items():
             if key in self.skip_keys:
                 continue
-            amsg = "%s not in %s" % (key, ','.join(exp_items.keys()))
-            self.assertTrue(key in exp_items.keys(), amsg)
-            amsg = "\nEXP '%s' (%s) \n%s\n" % (key, type(exp_items[key]),
-                                             exp_items[key])
+            amsg = "%s not in %s" % (key, '/'.join(exp.keys()))
+            self.assertTrue(key in exp.keys(), amsg)
+            amsg = "\nEXP '%s' (%s) \n%s\n" % (key, type(exp[key]),
+                                             exp[key])
             amsg += "GOT '%s' (%s) \n%s\n" % (key, type(val), val)
-            self.assertTrue(val == exp_items[key], amsg)
-            del exp_items[key]
-        amsg = "instance has items left: %s" % ','.join(exp_items)
-        self.assertTrue(len(exp_items) == 0, amsg)
+            self.assertTrue(val == exp[key], amsg)
+            del exp[key]
+        amsg = "instance has items left: %s" % ','.join(exp)
+        self.assertTrue(len(exp) == 0, amsg)
 
     def test0_0_init(self):
         """
@@ -49,7 +50,7 @@ class TestRaspiPin(unittest.TestCase):
             'cfg_file': None,
             'name': 'None',
             'prio': '0',
-            'mode': '0',
+            'mode': 'off',
             'groups': '',
             'start': '00:00',
             'duration': '0',
@@ -67,14 +68,15 @@ class TestRaspiPin(unittest.TestCase):
         """
         test1_file = "%s/packaged/etc/raspigpioctrl/pin1.cfg" % PREFIX
         pin1 = GpioPin(self.opt, test1_file)
+        pin1.init_pin(True)
             
         exp_items = {
-            'crypt': '045ca070608fe91b1066b98e8180d635',
+            'crypt': '8c34222d580d60b98fe73a05eeca0d3d',
             'pin_nr': '1',
             'cfg_file': test1_file,
             'name': 'Front',
             'prio': '0',
-            'mode': '1',
+            'mode': 'time',
             'groups': 'garden',
             'start': '01:00',
             'duration': '60',
@@ -93,11 +95,11 @@ class TestRaspiPin(unittest.TestCase):
         pin = GpioPin(self.opt)
         exp_items = {
             'crypt': None,
-            'pin_nr': '1',
+            'pin_nr': '0',
             'cfg_file': None,
-            'name': 'Front',
+            'name': 'None',
             'prio': '0',
-            'mode': '0',
+            'mode': 'off',
             'groups': '',
             'start': '00:00',
             'duration': '0',
@@ -105,13 +107,21 @@ class TestRaspiPin(unittest.TestCase):
             'state': '0',
             'dow': 'Mon,Tue,Wed,Thu,Fr,Sat,Sun',
             'gpio_base': "%spackaged/sys/class/gpio" % PREFIX,
-            'pin_base': "%spackaged/sys/class/gpio/gpio1" % PREFIX,
+            'pin_base': "%spackaged/sys/class/gpio/gpio0" % PREFIX,
         }
+        exp1 = exp_items.copy()
+        self.check_dict(pin, exp1)
         cfg = {
             'pin_nr': '1',
             'name': 'Front',
         }
         pin.set_cfg(cfg)
+        pin.change_mode('time')
+        exp_items['name'] = 'Front'
+        exp_items['mode'] = 'time'
+        pin_base = "%spackaged/sys/class/gpio/gpio1" % PREFIX
+        exp_items['pin_base'] = pin_base
+        exp_items['pin_nr'] = '1'
         self.check_dict(pin, exp_items)
 
     def test0_2_md5(self):
@@ -127,12 +137,12 @@ class TestRaspiPin(unittest.TestCase):
         """
         json = self.pin0.get_json()
         exp = {
-                'nr': '0',
+                'pin_nr': '0',
                 'groups': '',
                 'name': 'None',
                 'mode': 'off',
                 'prio': '0',
-                'on': "00:00",
+                'start': "00:00",
                 'duration': '0',
                 'sun_delay': '0',
                 'state': '0',
@@ -150,7 +160,7 @@ class TestRaspiPin(unittest.TestCase):
             os.remove(cfg_file)
         pin = GpioPin(self.opt)
         pin.write_cfg(cfg_file)
-        self.assertTrue(pin.crypt == '730f699d91ae6beb84bab4ae8362e55b',
+        self.assertTrue(pin.crypt == '9ec78ec1ae354d5cd568a90ab2f1493a',
                         "CRYPT: %s" % pin.crypt)
         os.remove(cfg_file)
 
@@ -167,7 +177,7 @@ class TestRaspiPin(unittest.TestCase):
         if os.path.exists(cfg_file):
             os.remove(cfg_file)
         pin.write_cfg(cfg_file)
-        self.assertTrue(pin.crypt == '0d8e37fb31e650472960e42be02b80f6',
+        self.assertTrue(pin.crypt == '80a913b6297d386cd72b9f9fd9172c34',
                         "CRYPT: %s" % pin.crypt)
         os.remove(cfg_file)
 
@@ -187,7 +197,7 @@ class TestRaspiPin(unittest.TestCase):
         if os.path.exists(cfg_file):
             os.remove(cfg_file)
         pin.write_cfg(cfg_file)
-        self.assertTrue(pin.crypt == '0d8e37fb31e650472960e42be02b80f6',
+        self.assertTrue(pin.crypt == '80a913b6297d386cd72b9f9fd9172c34',
                         "CRYPT: %s" % pin.crypt)
         
         cfg = {'start': "10:30"}
@@ -307,11 +317,13 @@ class TestRaspiPin(unittest.TestCase):
         """
         pin = GpioPin(self.opt)
         pin.change_mode("time")
-        self.assertTrue(pin.mode == "1")
+        self.assertTrue(pin.mode == "time")
         pin.change_mode("manual")
-        self.assertTrue(pin.mode == "2")
+        self.assertTrue(pin.mode == "manual")
         pin.change_mode("sun")
-        self.assertTrue(pin.mode == "3")
+        with self.assertRaises(ValueError):
+            pin.change_mode("buh")
+        self.assertTrue(pin.mode == "sun")
         self.assertTrue(get_mode_id("buh") is None)
 
     def test5_1_change_false_mode(self):

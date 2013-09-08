@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from ConfigParser import ConfigParser
-from raspi.pin import GpioPin
+from raspi.pin import GpioPin, get_mode_id
 import os
 from pprint import pprint
 
@@ -23,17 +23,17 @@ class GpioCtrl(object):
         self.gpio_cfg_path = "%s/etc/raspigpioctrl/" % opt['-r']
         self.gpio_pins = {}
 
-    def read_cfg(self):
+    def read_cfg(self, force_init=True):
         """
         read cfg file and update gpio_pins dict
         """
         path = "%s/%s" % (PREFIX, self.gpio_cfg_path)
-        print path
         for root, dirs, files in os.walk(path):
             for file_path in files:
                 pin = GpioPin(self.opt, "%s/%s" % (root, file_path))
-                pin.init_pin()
+                pin.init_pin(force_init)
                 self.gpio_pins[pin.get_id()] = pin
+                print pin.get_json()
 
     def flip(self, pin_id):
         """

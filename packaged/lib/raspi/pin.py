@@ -46,7 +46,7 @@ class GpioPin(object):
         self.pin_nr = '0'
         self.prio = '0'
         self.name = 'None'
-        self.mode = '0'
+        self.mode = 'off'
         self.groups = ''
         self.start = '00:00'
         self.duration = '0'
@@ -172,7 +172,7 @@ class GpioPin(object):
         """
         for key, val in PIN_MODES.items():
             if val == mode_str:
-                self.mode = str(key)
+                self.mode = mode_str
                 break
         else:
             raise ValueError("%s is no valid mode" % mode_str)
@@ -184,20 +184,33 @@ class GpioPin(object):
         if self.opt['-d'] >= dlevel:
             print "%s >> %s" % (dlevel, msg)
 
-    def init_pin(self):
+    def init_pin(self, force_init=False):
         """
         Init pin
         """
         pin_name = "gpio%s" % self.pin_nr
-        if not self.opt['--dry-run']:
-            os.system("echo %s > %s" % (self.pin_nr, pfad))
-            os.system("echo out > %s" % (pfad))
-            self.set_pin(0)
+        if not self.pin_val_exists() or force_init:
+            if not self.opt['--dry-run']:
+                os.system("echo %s > %s" % (self.pin_nr, pfad))
+                os.system("echo out > %s" % (pfad))
+                self.set_pin(0)
+            else:
+                pfad = "%s/%s" % (self.gpio_base, pin_name)
+                os.system("mkdir -p %s" % pfad)
+                print pfad
+                self.set_pin(0)
         else:
-            pfad = "%s/%s" % (self.gpio_base, pin_name)
-            os.system("mkdir -p %s" % pfad)
-            print pfad
-            self.set_pin(0)
+            self.set_real_life()
+
+    def set_real_life(self):
+        """
+        read real live value and overwrite current state
+        """
+        rl_val = self.read_real_life()
+        if self.state != rl_val:
+            self.state = rl_val
+            print "PinNR %s: Overwrite pin_state with RL (%s)" % (self.pin_nr,
+                                                                  rl_val)
 
     def read_cfg(self):
         """
@@ -228,10 +241,12 @@ class GpioPin(object):
         write config to file - rereads if md5 has changed
         """
         crypt = None
-        amsg = "if no cfg_file is given, the instance should already have one"
-        assert not ((cfg_file is None) and (self.cfg_file is None)), amsg
-        # if a cfg was given, it will be set as default file
-        self.cfg_file = cfg_file
+        if cfg_file is None:
+            amsg = "if no cfg_file is given, the instance should already have one"
+            assert self.cfg_file is not None, amsg
+            # if a cfg was given, it will be set as default file
+        else:
+            self.cfg_file = cfg_file
 
         if os.path.exists(self.cfg_file):
             self.deb(self.cfg_file)
@@ -246,7 +261,7 @@ class GpioPin(object):
         cfg.add_section(sec)
         for key, val in self.get_json().items():
             cfg.set(sec, key, val)
-        filed = open(cfg_file, "w")
+        filed = open(self.cfg_file, "w")
         cfg.write(filed)
         filed.close()
         self.crypt = self.get_md5()
@@ -257,11 +272,11 @@ class GpioPin(object):
         return json
         """
         res = {
-            'nr': self.pin_nr,
+            'pin_nr': self.pin_nr,
             'name': self.name,
-            'mode': PIN_MODES[self.mode],
+            'mode': self.mode,
             'prio': self.prio,
-            'on': self.start,
+            'start': self.start,
             'duration': self.duration,
             'sun_delay': self.sun_delay,
             'state': self.state,
@@ -273,7 +288,8 @@ class GpioPin(object):
     def read_real_life(self):
         """
         """
-        filed = open("%s/value" % self.pin_base, "r")
+        pfad = "%s/value" % self.pin_base
+        filed = open(pfad, "r")
         cont = filed.read().strip()
         filed.close()
         return cont
@@ -287,12 +303,21 @@ class GpioPin(object):
         else:
             self.set_pin(0)
 
+    def pin_val_exists(self):
+        """
+        returns True if file exists
+        """
+        pfad = "%s/value" % (self.pin_base)
+        print pfad
+        return os.path.exists(pfad)
+
     def set_pin(self, val):
         """
         set pin to value
         """
         pfad = "%s/value" % (self.pin_base)
         cmd = "echo %s > %s" % (val, pfad)
+        print cmd
         err = os.system(cmd)
         self.state = str(val)
 
@@ -332,7 +357,7 @@ class GpioPin(object):
             dt = datetime.datetime.now()
         off = self.get_dt_off()
         if off <= dt and self.state == '1' \
-           and self.mode not in (get_mode_id('manual')):
+           and self.mode not in ('manual'):
             self.set_pin(0)
 
     def trigger_on(self, dt=None):

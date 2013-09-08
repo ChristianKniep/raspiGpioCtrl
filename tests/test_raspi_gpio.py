@@ -69,7 +69,7 @@ class TestRaspiGpio(unittest.TestCase):
         GpioCtrl >1_0> Read default config dir
         """
         ctrl = GpioCtrl(self.opt)
-        ctrl.read_cfg()
+        ctrl.read_cfg(True)
         pincfg_path = "%s/%s/etc/raspigpioctrl/" % (PREFIX, self.opt['-r'])
         pin1 = GpioPin(self.opt, "%s/pin1.cfg" % pincfg_path)
         pin2 = GpioPin(self.opt, "%s/pin2.cfg" % pincfg_path)
