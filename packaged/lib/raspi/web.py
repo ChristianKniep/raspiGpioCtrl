@@ -8,13 +8,7 @@ from raspi.ctrl import GpioCtrl
 from raspi.pin import get_mode_id
 
 import re
-try:
-    import cherrypy
-except ImportError:
-    app_path = "/opt/local/Library/Frameworks/Python.framework/Versions/"
-    app_path += "2.7/lib/python2.7/site-packages/"
-    sys.path.append(app_path)
-    import cherrypy
+import cherrypy
 
 
 class Web(object):
