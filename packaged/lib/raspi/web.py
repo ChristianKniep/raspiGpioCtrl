@@ -37,7 +37,8 @@ class Web(object):
             <tr>
             <form method="POST">
                 <td><b>%(pin_nr)s</b></td>
-                <td><b>%(pinid)s</b></td>""" % pin_json
+                <td><b>%(pinid)s</b></td>
+                <td><b>%(groups)s</b></td>""" % pin_json
         self.html += "<input type='hidden' name='gpio' value='%s'>" % gpio
         if pin_json['state'] == "0":
             state_col = 'red'
@@ -121,6 +122,7 @@ class Web(object):
             <tr align="center">
                 <td>GpioNr</td>
                 <td>PinID</td>
+                <td>Groups</td>
                 <td>Prio</td>
                 <td>Status</td>
                 <td>Modus</td>
