@@ -158,7 +158,7 @@ class Web(object):
             self.gctrl.flip(self.form['gpio'])
         elif self.form['send'] == "change":
             if self.form['mode'] == "sun":
-                self.gpio_ctrl.set_sunset(self.form['gpio'])
+                self.gctrl.gpio_pins[self.form['gpio']].change_mode('sun')
             elif self.form['mode'] == "time":
                 dow = []
                 for key,val in self.form['dow'].items():
@@ -172,4 +172,4 @@ class Web(object):
                       }
                 self.gctrl.set_pin_cfg(self.form['gpio'], pin_cfg)
                 self.gctrl.arrange_pins()
-                self.gpio_pins[self.form['gpio']].write_cfg()
+                self.gctrl.gpio_pins[self.form['gpio']].write_cfg()
