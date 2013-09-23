@@ -65,12 +65,12 @@ class GpioCtrl(object):
             if grp not in grp_times.keys():
                 grp_times[grp] = []
             grp_times[grp].append(pin)
-        end = None
         for grp, lst in grp_times.items():
+            end = None
             lst.sort()
             for item in lst:
                 # check times and change if neccessary
-                if end is not None and end > item.get_dt_on():
+                if (end is not None) and (end > item.get_dt_on()):
                     # we have to set a new start and adjust the end
                     item.set_cfg({'start': end.strftime("%H:%M")})
                 end = item.get_dt_off()

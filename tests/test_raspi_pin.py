@@ -345,6 +345,7 @@ class TestRaspiPin(unittest.TestCase):
         lst = []
         pin0 = GpioPin(self.opt)
         pin0.set_cfg({
+            'groups':'garden',
             'pin_nr': '4',
             'start': '00:10',
             'prio': '0',
@@ -352,6 +353,7 @@ class TestRaspiPin(unittest.TestCase):
         })
         pin1 = GpioPin(self.opt)
         pin1.set_cfg({
+            'groups':'garden',
             'pin_nr': '3',
             'start': '00:10',
             'prio': '0',
@@ -359,6 +361,7 @@ class TestRaspiPin(unittest.TestCase):
         })
         pin2 = GpioPin(self.opt)
         pin2.set_cfg({
+            'groups':'garden',
             'pin_nr': '3',
             'start': '00:20',
             'prio': '0',
@@ -376,6 +379,7 @@ class TestRaspiPin(unittest.TestCase):
         lst = []
         pin0 = GpioPin(self.opt)
         pin0.set_cfg({
+            'groups':'garden',
             'pin_nr': '4',
             'start': '00:10',
             'prio': '0',
@@ -383,6 +387,7 @@ class TestRaspiPin(unittest.TestCase):
         })
         pin1 = GpioPin(self.opt)
         pin1.set_cfg({
+            'groups':'garden',
             'pin_nr': '3',
             'start': '00:10',
             'prio': '0',
@@ -390,6 +395,7 @@ class TestRaspiPin(unittest.TestCase):
         })
         pin2 = GpioPin(self.opt)
         pin2.set_cfg({
+            'groups':'garden',
             'pin_nr': '3',
             'start': '00:20',
             'prio': '0',
@@ -407,6 +413,7 @@ class TestRaspiPin(unittest.TestCase):
         lst = []
         pin0 = GpioPin(self.opt)
         pin0.set_cfg({
+            'groups':'garden',
             'pin_nr': '4',
             'start': '00:00',
             'prio': '0',
@@ -421,6 +428,7 @@ class TestRaspiPin(unittest.TestCase):
         })
         pin2 = GpioPin(self.opt)
         pin2.set_cfg({
+            'groups':'garden',
             'pin_nr': '3',
             'start': '00:00',
             'prio': '1',
@@ -428,6 +436,7 @@ class TestRaspiPin(unittest.TestCase):
         })
         pin3 = GpioPin(self.opt)
         pin3.set_cfg({
+            'groups':'garden',
             'pin_nr': '3',
             'start': '00:00',
             'prio': '0',
@@ -453,6 +462,7 @@ class TestRaspiPin(unittest.TestCase):
         lst = []
         pin0 = GpioPin(self.opt)
         pin0.set_cfg({
+            'groups':'garden',
             'pin_nr': '4',
             'start': '00:00',
             'prio': '0',
@@ -460,6 +470,7 @@ class TestRaspiPin(unittest.TestCase):
         })
         pin1 = GpioPin(self.opt)
         pin1.set_cfg({
+            'groups':'garden',
             'pin_nr': '3',
             'start': '00:10',
             'prio': '0',
@@ -467,6 +478,7 @@ class TestRaspiPin(unittest.TestCase):
         })
         pin2 = GpioPin(self.opt)
         pin2.set_cfg({
+            'groups':'garden',
             'pin_nr': '3',
             'start': '00:00',
             'prio': '1',
@@ -474,6 +486,7 @@ class TestRaspiPin(unittest.TestCase):
         })
         pin3 = GpioPin(self.opt)
         pin3.set_cfg({
+            'groups':'garden',
             'pin_nr': '3',
             'start': '00:00',
             'prio': '0',
@@ -481,6 +494,7 @@ class TestRaspiPin(unittest.TestCase):
         })
         pin4 = GpioPin(self.opt)
         pin4.set_cfg({
+            'groups':'garden',
             'pin_nr': '4',
             'start': '00:00',
             'prio': '0',
@@ -514,6 +528,7 @@ class TestRaspiPin(unittest.TestCase):
         lst = []
         pin0 = GpioPin(self.opt)
         pin0.set_cfg({
+            'groups':'garden',
             'pin_nr': '4',
             'start': '00:00',
             'prio': '0',
@@ -521,6 +536,7 @@ class TestRaspiPin(unittest.TestCase):
         })
         pin1 = GpioPin(self.opt)
         pin1.set_cfg({
+            'groups':'garden',
             'pin_nr': '3',
             'start': '00:10',
             'prio': '0',
@@ -528,6 +544,7 @@ class TestRaspiPin(unittest.TestCase):
         })
         pin2 = GpioPin(self.opt)
         pin2.set_cfg({
+            'groups':'garden',
             'pin_nr': '3',
             'start': '00:00',
             'prio': '1',
@@ -535,6 +552,7 @@ class TestRaspiPin(unittest.TestCase):
         })
         pin3 = GpioPin(self.opt)
         pin3.set_cfg({
+            'groups':'garden',
             'pin_nr': '3',
             'start': '00:00',
             'prio': '0',
@@ -542,6 +560,7 @@ class TestRaspiPin(unittest.TestCase):
         })
         pin4 = GpioPin(self.opt)
         pin4.set_cfg({
+            'groups':'garden',
             'pin_nr': '4',
             'start': '00:00',
             'prio': '1',
@@ -569,6 +588,7 @@ class TestRaspiPin(unittest.TestCase):
         lst = []
         pin0 = GpioPin(self.opt)
         pin0.set_cfg({
+            'groups':'garden',
             'pin_nr': '4',
             'start': '00:00',
             'prio': '0',
@@ -576,6 +596,7 @@ class TestRaspiPin(unittest.TestCase):
         })
         pin1 = GpioPin(self.opt)
         pin1.set_cfg({
+            'groups':'garden',
             'pin_nr': '3',
             'start': '00:10',
             'prio': '0',
@@ -583,6 +604,7 @@ class TestRaspiPin(unittest.TestCase):
         })
         pin2 = GpioPin(self.opt)
         pin2.set_cfg({
+            'groups':'garden',
             'pin_nr': '3',
             'start': '00:00',
             'prio': '1',
@@ -590,6 +612,7 @@ class TestRaspiPin(unittest.TestCase):
         })
         pin3 = GpioPin(self.opt)
         pin3.set_cfg({
+            'groups':'garden',
             'pin_nr': '3',
             'start': '00:00',
             'prio': '0',
@@ -597,6 +620,7 @@ class TestRaspiPin(unittest.TestCase):
         })
         pin4 = GpioPin(self.opt)
         pin4.set_cfg({
+            'groups':'garden',
             'pin_nr': '4',
             'start': '00:00',
             'prio': '0',

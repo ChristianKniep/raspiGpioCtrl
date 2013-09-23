@@ -74,11 +74,13 @@ class TestRaspiGpio(unittest.TestCase):
         pin1 = GpioPin(self.opt, "%s/pin1.cfg" % pincfg_path)
         pin2 = GpioPin(self.opt, "%s/pin2.cfg" % pincfg_path)
         pin3 = GpioPin(self.opt, "%s/pin3.cfg" % pincfg_path)
+        pin4 = GpioPin(self.opt, "%s/pin4.cfg" % pincfg_path)
         exp_items = {
             'gpio_pins': {
                 '1': pin1,
                 '2': pin2,
                 '3': pin3,
+                '4': pin4,
             }
         }
         self.check(ctrl, exp_items)
@@ -109,21 +111,25 @@ class TestRaspiGpio(unittest.TestCase):
         """
         ctrl = GpioCtrl(self.opt)
         ctrl.read_cfg()
-        ctrl.set_pin_cfg('1', {'groups':''})
-        ctrl.set_pin_cfg('2', {'groups':''})
-        ctrl.set_pin_cfg('3', {'groups':''})
+        ctrl.set_pin_cfg('1', {'groups':'grp1'})
+        ctrl.set_pin_cfg('2', {'groups':'grp2'})
+        ctrl.set_pin_cfg('3', {'groups':'grp3'})
+        ctrl.set_pin_cfg('4', {'groups':'grp4'})
         pincfg_path = "%s/%s/etc/raspigpioctrl/" % (PREFIX, self.opt['-r'])
         pin1 = GpioPin(self.opt, "%s/pin1.cfg" % pincfg_path)
-        pin1.set_cfg({'groups':''})
+        pin1.set_cfg({'groups':'grp1'})
         pin2 = GpioPin(self.opt, "%s/pin2.cfg" % pincfg_path)
-        pin2.set_cfg({'groups':''})
+        pin2.set_cfg({'groups':'grp2'})
         pin3 = GpioPin(self.opt, "%s/pin3.cfg" % pincfg_path)
-        pin3.set_cfg({'groups':''})
+        pin3.set_cfg({'groups':'grp3'})
+        pin4 = GpioPin(self.opt, "%s/pin4.cfg" % pincfg_path)
+        pin4.set_cfg({'groups':'grp4'})
         exp_items = {
             'gpio_pins': {
                 '1': pin1,
                 '2': pin2,
                 '3': pin3,
+                '4': pin4,
             }
         }
         self.check(ctrl, exp_items)
@@ -149,6 +155,11 @@ class TestRaspiGpio(unittest.TestCase):
                       'prio':'2',
                       'duration':'10',
                       })
+        ctrl.set_pin_cfg('4', {'groups':'b',
+                      'start':'00:00',
+                      'prio':'0',
+                      'duration':'10',
+                      })
         pincfg_path = "%s/%s/etc/raspigpioctrl/" % (PREFIX, self.opt['-r'])
         pin1 = GpioPin(self.opt, "%s/pin1.cfg" % pincfg_path)
         pin1.set_cfg({'groups':'a',
@@ -168,11 +179,18 @@ class TestRaspiGpio(unittest.TestCase):
                       'prio':'2',
                       'duration':'10',
                       })
+        pin4 = GpioPin(self.opt, "%s/pin4.cfg" % pincfg_path)
+        pin4.set_cfg({'groups':'b',
+                      'start':'00:00',
+                      'prio':'0',
+                      'duration':'10',
+                      })
         exp_items = {
             'gpio_pins': {
                 '1': pin1,
                 '2': pin2,
                 '3': pin3,
+                '4': pin4,
             }
         }
         ctrl.arrange_pins()
@@ -193,33 +211,40 @@ class TestRaspiGpio(unittest.TestCase):
         ctrl.set_pin_cfg('1', cfg)
         ctrl.set_pin_cfg('2', cfg)
         ctrl.set_pin_cfg('3', cfg)
+        ctrl.set_pin_cfg('4', cfg)
         ctrl.set_pin_cfg('1', {'start':'00:00'})
         ctrl.set_pin_cfg('2', {'start':'00:10'})
         ctrl.set_pin_cfg('3', {'start':'00:25'})
+        ctrl.set_pin_cfg('4', {'start':'00:35'})
         # t0
         dt = self.create_dt(0, 0)
         ctrl.trigger_pins(dt)
-        mask = {'1': '1', '2': '0', '3': '0'}
+        mask = {'1': '1', '2': '0', '3': '0', '4': '0'}
         self.check_pins(ctrl, mask)
         # t1
         dt = self.create_dt(11, 0)
         ctrl.trigger_pins(dt)
-        mask = {'1': '0', '2': '1', '3': '0'}
+        mask = {'1': '0', '2': '1', '3': '0', '4': '0'}
         self.check_pins(ctrl, mask)
         # t2
         dt = self.create_dt(21, 0)
         ctrl.trigger_pins(dt)
-        mask = {'1': '0', '2': '0', '3': '0'}
+        mask = {'1': '0', '2': '0', '3': '0', '4': '0'}
         self.check_pins(ctrl, mask)
         # t3
         dt = self.create_dt(30, 0)
         ctrl.trigger_pins(dt)
-        mask = {'1': '0', '2': '0', '3': '1'}
+        mask = {'1': '0', '2': '0', '3': '1', '4': '0'}
         self.check_pins(ctrl, mask)
         # t4
         dt = self.create_dt(37, 0)
         ctrl.trigger_pins(dt)
-        mask = {'1': '0', '2': '0', '3': '0'}
+        mask = {'1': '0', '2': '0', '3': '0', '4': '1'}
+        self.check_pins(ctrl, mask)
+        # t5
+        dt = self.create_dt(47, 0)
+        ctrl.trigger_pins(dt)
+        mask = {'1': '0', '2': '0', '3': '0', '4': '0'}
         self.check_pins(ctrl, mask)
 
     def test5_0_iter_pins(self):

@@ -39,8 +39,10 @@ class Web(object):
             '<form method="POST">',
             "<td><b>%(pin_nr)s</b></td>" % pin_json,
             "<td><b>%(pinid)s</b></td>" % pin_json,
-            "<td><b>%(groups)s</b></td>" % pin_json,
             ])
+        html_line = "<td><input type='text' name='groups' "
+        html_line += "value='%(groups)s' size='20'></td>" % pin_json
+        self.html.append(html_line)
         self.html.append("<input type='hidden' name='gpio' value='%s'>" % gpio)
         if pin_json['state'] == "0":
             state_col = 'red'
@@ -102,16 +104,18 @@ class Web(object):
 
     @cherrypy.expose
     def index(self, gpio=None, start=None, dow_Wed=None, dow_Sun=None, prio=None,
-              dow_Sat=None, dow_Tue=None, sun_delay=None, dow_Mon=None,
+              dow_Sat=None, dow_Tue=None, sun_delay=None, dow_Mon=None, groups=None,
               send=None, duration=None, dow_Thu=None, dow_Fri=None, mode=None):
         """
         Creates the list of gpio pins and handles changes
         """
+        self.html = []
         if gpio is not None:
             self.form = {
             'gpio': gpio,
             'start': start,
             'prio': prio,
+            'groups': groups,
             'dow': {
                 'mon': dow_Mon,
                 'tue': dow_Tue,
@@ -135,9 +139,9 @@ class Web(object):
                 '<td>GpioNr</td>',
                 '<td>PinID</td>',
                 '<td>Groups</td>',
-                '<td>Prio</td>',
                 '<td>Status</td>',
                 '<td>Modus</td>',
+                '<td>Prio</td>',
                 '<td>An um</td>',
                 '<td>Wochentage</td>',
                 '<td>Dauer</td>',
@@ -164,12 +168,12 @@ class Web(object):
                 for key,val in self.form['dow'].items():
                     if val is not None:
                         dow.append(key)
-                pin_cfg = {'groups':'a',
+                pin_cfg = {'groups': self.form['groups'],
                       'start': self.form['start'],
                       'prio': self.form['prio'],
                       'duration': self.form['duration'],
                       'dow': ",".join(dow),
                       }
                 self.gctrl.set_pin_cfg(self.form['gpio'], pin_cfg)
-                self.gctrl.arrange_pins()
+                self.gctrl. arrange_pins()
                 self.gctrl.gpio_pins[self.form['gpio']].write_cfg()

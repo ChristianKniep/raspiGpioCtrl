@@ -65,6 +65,7 @@ class GpioPin(object):
         start = self.start == other.start
         prio = self.prio == other.prio
         duration = self.duration == other.duration
+        groups = set(self.groups.split(",")) == set(other.groups.split(","))
         return start and prio and duration
 
     def __ne__(self, other):
