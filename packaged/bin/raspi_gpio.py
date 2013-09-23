@@ -5,11 +5,12 @@ Usage:
     raspi_gpio.py [options]
 
 Options:
-  -h  --help  show this help message and exit
-  -d          Debug
-  --dry-run   dry run on !raspi creating gpio-path in `pwd`
-  --no-read   Do not read cfg files within etc/...
-  -r=<root>   Root dir for config, lock-files, etc (def:/)
+  -h  --help     show this help message and exit
+  -d             Debug
+  -p <web_port>  Webserver port [default: 8888]
+  --dry-run      dry run on !raspi creating gpio-path in `pwd`
+  --no-read      Do not read cfg files within etc/...
+  -r=<root>      Root dir for config, lock-files, etc (def:/)
 """
 
 # Bibliotheken laden
@@ -42,9 +43,13 @@ def main():
     #    srv = GpioCtrl(options)
     #    srv.run_cronjob()
     #if options.get("run_webserver"):
+    print options
     cherrypy.config.update(
-        {'server.socket_port': 8888 ,} 
+        {
+	'server.socket_port': int(options['-p']) ,
+	} 
         )
+    cherrypy.server.socket_host = '192.168.2.204'
     cherrypy.quickstart(Web(options))
 
 

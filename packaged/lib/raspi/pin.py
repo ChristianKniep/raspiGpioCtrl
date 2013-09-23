@@ -9,15 +9,14 @@ import md5
 import datetime
 import traceback
 
-PREFIX = os.environ.get("WORKSPACE", "./")
-if not PREFIX.endswith("/"):
-    PREFIX += "/"
+from raspi import PREFIX
 
 PIN_MODES = {
     '0': 'off',
     '1': 'time',
-    '2': 'manual',
-    '3': 'sun'
+    '2': 'man',
+    '3': 'sun',
+    '4': 'on',
 }
 
 
@@ -142,6 +141,14 @@ class GpioPin(object):
         else:
             return False
 
+    def main_check(self):
+        """
+        returns True if main does not block the whole think
+        > if mode==off and state==0: user did not want to rain at all
+        > elif mode==on: could be fliped on
+        """
+        pass
+    
     def get_id(self):
         """
         return identifier on which a sort should be done
@@ -192,13 +199,13 @@ class GpioPin(object):
         pin_name = "gpio%s" % self.pin_nr
         if not self.pin_val_exists() or force_init:
             if not self.opt['--dry-run']:
+                pfad = "%s/%s" % (self.gpio_base, pin_name)
                 os.system("echo %s > %s" % (self.pin_nr, pfad))
                 os.system("echo out > %s" % (pfad))
                 self.set_pin(0)
             else:
                 pfad = "%s/%s" % (self.gpio_base, pin_name)
                 os.system("mkdir -p %s" % pfad)
-                print pfad
                 self.set_pin(0)
         else:
             self.set_real_life()

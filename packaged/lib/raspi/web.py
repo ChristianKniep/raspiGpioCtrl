@@ -31,17 +31,70 @@ class Web(object):
         self.gctrl.add_pin(pin)
 
     def create_row(self, gpio):
-        """ Erstellt Zeile fuer gpio-pin in Form eines Formulars
+        """
+        Global function to create row for pin
+        """
+        pin_json = self.gpio_pins[gpio].get_json()
+        if pin_json['groups'] == "main":
+            self.create_row_main(gpio)
+        else:
+            self.create_row_slave(gpio)
+
+    def create_row_main(self, gpio):
+        """
+        create row for normal rain switch
+        """
+        pin_json = self.gpio_pins[gpio].get_json()
+        pin_json['pinid'] = gpio
+        self.html.extend([
+            "<tr>",
+            '<form method="POST">',
+            "<td><b>%(pin_nr)s</b></td>" % pin_json,
+            "<td><b>%(name)s</b></td>" % pin_json,
+            '<td>group</td>',  #group
+        ])
+        self.html.append("<input type='hidden' name='gpio' value='%s'>" % gpio)
+        if pin_json['state'] == "0":
+            state_col = 'red'
+        else:
+            state_col = 'green'
+        self.html.append("<td style='background-color:%s'>" % state_col)
+        self.html.append("<input name='send' type='submit' value='flip'></td>")
+        if pin_json['mode'] == "off":
+            state_col = 'red'
+        else:
+            state_col = 'green'
+        self.html.append("<td style='background-color:%s'>" % state_col)
+        html_line = "<input name='send' type='submit' value='OFF'>"
+        html_line += "<input name='send' type='submit' value='ON'></td>"
+        self.html.extend([
+            html_line,
+            '<td></td>',  #prio
+            '<td></td>',  # on
+            '<td></td>',  # dow
+            '<td></td>',  # duration
+            '<td></td>',  # sun
+            ])
+        html_line = "<td><input name='send' type='submit' value='change'></td>"
+        self.html.extend([
+            html_line,
+            "</form>",
+            "</tr>",
+            ])
+
+    def create_row_slave(self, gpio):
+        """
+        create row for normal rain switch
         """
         pin_json = self.gpio_pins[gpio].get_json()
         pin_json['pinid'] = gpio
         self.html.extend(["<tr>",
             '<form method="POST">',
             "<td><b>%(pin_nr)s</b></td>" % pin_json,
-            "<td><b>%(pinid)s</b></td>" % pin_json,
+            "<td><b>%(name)s</b></td>" % pin_json,
             ])
         html_line = "<td><input type='text' name='groups' "
-        html_line += "value='%(groups)s' size='20'></td>" % pin_json
+        html_line += "value='%(groups)s' size='10'></td>" % pin_json
         self.html.append(html_line)
         self.html.append("<input type='hidden' name='gpio' value='%s'>" % gpio)
         if pin_json['state'] == "0":
@@ -68,7 +121,7 @@ class Web(object):
         self.html.append("</select></td>")
         self.html.append("</td>")
         html_line = "<td><input type='text' name='start' "
-        html_line += "value='%(start)s' size='6'>o'clock (24h)</td>" % pin_json
+        html_line += "value='%(start)s' size='5'>(24h)</td>" % pin_json
         self.html.extend([
             html_line,
             "<td>",
@@ -100,6 +153,7 @@ class Web(object):
         """ Creates table to show the different gpiopins
         """
         for gpio in self.gpio_pins.keys():
+            print gpio
             self.create_row(gpio)
 
     @cherrypy.expose
@@ -136,8 +190,8 @@ class Web(object):
             "<title>web.py</title>"
             '</head><body><table border="1">',
             '<tr align="center">',
-                '<td>GpioNr</td>',
                 '<td>PinID</td>',
+                '<td>Name</td>',
                 '<td>Groups</td>',
                 '<td>Status</td>',
                 '<td>Modus</td>',
@@ -157,9 +211,14 @@ class Web(object):
         """
         Triggered if Web-GUI wants to change a pin
         """
-        #print "%s! %s" % (self.form['send'], self.form)
         if self.form['send'] == "flip":
             self.gctrl.flip(self.form['gpio'])
+        elif self.form['send'] == "OFF":
+            self.gctrl.gpio_pins[self.form['gpio']].change_mode('off')
+            self.gctrl.gpio_pins[self.form['gpio']].write_cfg()
+        elif self.form['send'] == "ON":
+            self.gctrl.gpio_pins[self.form['gpio']].change_mode('on')
+            self.gctrl.gpio_pins[self.form['gpio']].write_cfg()
         elif self.form['send'] == "change":
             if self.form['mode'] == "sun":
                 self.gctrl.gpio_pins[self.form['gpio']].change_mode('sun')
@@ -176,4 +235,7 @@ class Web(object):
                       }
                 self.gctrl.set_pin_cfg(self.form['gpio'], pin_cfg)
                 self.gctrl. arrange_pins()
+                self.gctrl.gpio_pins[self.form['gpio']].write_cfg()
+            elif self.form['mode'] == "man":
+                self.gctrl.gpio_pins[self.form['gpio']].change_mode('man')
                 self.gctrl.gpio_pins[self.form['gpio']].write_cfg()

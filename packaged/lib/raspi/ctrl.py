@@ -3,12 +3,9 @@
 
 from ConfigParser import ConfigParser
 from raspi.pin import GpioPin, get_mode_id
+from raspi import PREFIX
 import os
 from pprint import pprint
-
-PREFIX = os.environ.get("WORKSPACE", "./")
-if not PREFIX.endswith("/"):
-    PREFIX += "/"
 
 
 class GpioCtrl(object):
@@ -22,12 +19,15 @@ class GpioCtrl(object):
         self.opt = opt
         self.gpio_cfg_path = "%s/etc/raspigpioctrl/" % opt['-r']
         self.gpio_pins = {}
+        self.main_pins = {}
 
     def add_pin(self, pin):
         """
         add pin to ctrl instance
         """
         self.gpio_pins[pin.get_id()] = pin
+        if 'main' in pin.get_groups():
+            self.main_pins[pin.get_id()] = pin
 
     def read_cfg(self, force_init=True):
         """
@@ -46,6 +46,23 @@ class GpioCtrl(object):
         """
         assert pin_id in self.gpio_pins.keys()
         self.gpio_pins[pin_id].flip()
+        self.trigger_main()
+
+    def trigger_main(self):
+        """
+        if a rain relay is set switch the main relay
+        -> check if more then two of a group is switched on
+        """
+        main_pinids = set(self.main_pins.keys())
+        gpio_pinids = set(self.gpio_pins.keys())
+        assert len(main_pinids) <= 1
+        main_pinid = main_pinids[0]
+        if self.main_pins[min_pinid].main_check():
+            # if false, nothing to do, because main blocks everything
+            for pin_id in set(main_pinids).difference(gpio_pinids):
+                print pin_id
+            
+    
 
     def set_pin_cfg(self, pin_id, cfg_dic):
         """
