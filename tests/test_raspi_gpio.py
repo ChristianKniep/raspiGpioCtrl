@@ -3,7 +3,7 @@ import argparse
 import os
 import datetime
 from raspi.ctrl import GpioCtrl, PREFIX
-from raspi.pin import GpioPin, get_mode_id, PIN_MODES
+from raspi.pin import SlavePin, MainPin, get_mode_id, PIN_MODES
 from pprint import pprint
 
 if not PREFIX.endswith("/"):
@@ -44,6 +44,7 @@ class TestRaspiGpio(unittest.TestCase):
                     amsg += "GOT\n%s\n" % got
                     self.assertTrue(got == exp, amsg)
             else:
+                print key, def_items
                 amsg = "%s not in %s" % (key, ','.join(def_items.keys()))
                 self.assertTrue(key in def_items.keys(), amsg)
                 amsg = "\nEXP '%s' (%s) \n%s\n" % (key, type(def_items[key]),
@@ -71,16 +72,18 @@ class TestRaspiGpio(unittest.TestCase):
         ctrl = GpioCtrl(self.opt)
         ctrl.read_cfg(True)
         pincfg_path = "%s/%s/etc/raspigpioctrl/" % (PREFIX, self.opt['-r'])
-        pin1 = GpioPin(self.opt, "%s/pin1.cfg" % pincfg_path)
-        pin2 = GpioPin(self.opt, "%s/pin2.cfg" % pincfg_path)
-        pin3 = GpioPin(self.opt, "%s/pin3.cfg" % pincfg_path)
-        pin4 = GpioPin(self.opt, "%s/pin4.cfg" % pincfg_path)
+        pin1 = SlavePin(self.opt, "%s/pin1.cfg" % pincfg_path)
+        pin2 = SlavePin(self.opt, "%s/pin2.cfg" % pincfg_path)
+        pin3 = SlavePin(self.opt, "%s/pin3.cfg" % pincfg_path)
+        pin4 = SlavePin(self.opt, "%s/pin4.cfg" % pincfg_path)
+        pin5 = MainPin(self.opt, "%s/main5.cfg" % pincfg_path)
         exp_items = {
             'gpio_pins': {
                 '1': pin1,
                 '2': pin2,
                 '3': pin3,
                 '4': pin4,
+                '5': pin5,
             }
         }
         self.check(ctrl, exp_items)
@@ -92,8 +95,7 @@ class TestRaspiGpio(unittest.TestCase):
         ctrl = GpioCtrl(self.opt)
         ctrl.read_cfg()
         ctrl.flip('2')
-        gpio_sys = "%s/packaged/sys/class/gpio/" % PREFIX 
-        print gpio_sys
+        gpio_sys = "%s/packaged/sys/class/gpio/" % PREFIX
         filed = open("%s/gpio2/value" % gpio_sys, "r")
         cont = filed.read().strip()
         filed.close()
@@ -104,6 +106,31 @@ class TestRaspiGpio(unittest.TestCase):
         cont = filed.read().strip()
         filed.close()
         self.assertTrue(cont == "0", cont)
+
+    def test2_1_flip_main(self):
+        """
+        GpioCtrl >2_1> flip pin2 w/ and w/o main pin be set
+        """
+        ctrl = GpioCtrl(self.opt)
+        ctrl.read_cfg()
+        ctrl.set_pin('2', 0)
+        main_cfg = {
+            'groups': 'garden',
+        }
+        ctrl.set_pin_cfg('5', main_cfg)
+        ctrl.flip('2')
+        gpio_sys = "%s/packaged/sys/class/gpio/" % PREFIX 
+        filed = open("%s/gpio2/value" % gpio_sys, "r")
+        cont = filed.read().strip()
+        filed.close()
+        self.assertTrue(cont == "0", cont)
+        ctrl.flip('5')
+        ctrl.flip('2')
+        gpio_sys = "%s/packaged/sys/class/gpio/" % PREFIX
+        filed = open("%s/gpio2/value" % gpio_sys, "r")
+        cont = filed.read().strip()
+        filed.close()
+        self.assertTrue(cont == "1", cont)
 
     def test3_0_check_arrangement(self):
         """
@@ -116,13 +143,13 @@ class TestRaspiGpio(unittest.TestCase):
         ctrl.set_pin_cfg('3', {'groups':'grp3'})
         ctrl.set_pin_cfg('4', {'groups':'grp4'})
         pincfg_path = "%s/%s/etc/raspigpioctrl/" % (PREFIX, self.opt['-r'])
-        pin1 = GpioPin(self.opt, "%s/pin1.cfg" % pincfg_path)
+        pin1 = SlavePin(self.opt, "%s/pin1.cfg" % pincfg_path)
         pin1.set_cfg({'groups':'grp1'})
-        pin2 = GpioPin(self.opt, "%s/pin2.cfg" % pincfg_path)
+        pin2 = SlavePin(self.opt, "%s/pin2.cfg" % pincfg_path)
         pin2.set_cfg({'groups':'grp2'})
-        pin3 = GpioPin(self.opt, "%s/pin3.cfg" % pincfg_path)
+        pin3 = SlavePin(self.opt, "%s/pin3.cfg" % pincfg_path)
         pin3.set_cfg({'groups':'grp3'})
-        pin4 = GpioPin(self.opt, "%s/pin4.cfg" % pincfg_path)
+        pin4 = SlavePin(self.opt, "%s/pin4.cfg" % pincfg_path)
         pin4.set_cfg({'groups':'grp4'})
         exp_items = {
             'gpio_pins': {
@@ -160,37 +187,41 @@ class TestRaspiGpio(unittest.TestCase):
                       'prio':'0',
                       'duration':'10',
                       })
+        ctrl.set_pin_cfg('5', {'groups':'b'})
         pincfg_path = "%s/%s/etc/raspigpioctrl/" % (PREFIX, self.opt['-r'])
-        pin1 = GpioPin(self.opt, "%s/pin1.cfg" % pincfg_path)
+        pin1 = SlavePin(self.opt, "%s/pin1.cfg" % pincfg_path)
         pin1.set_cfg({'groups':'a',
                       'start':'00:00',
                       'prio':'0',
                       'duration':'10',
                       })
-        pin2 = GpioPin(self.opt, "%s/pin2.cfg" % pincfg_path)
+        pin2 = SlavePin(self.opt, "%s/pin2.cfg" % pincfg_path)
         pin2.set_cfg({'groups':'a',
                       'start':'00:10',
                       'prio':'1',
                       'duration':'10',
                       })
-        pin3 = GpioPin(self.opt, "%s/pin3.cfg" % pincfg_path)
+        pin3 = SlavePin(self.opt, "%s/pin3.cfg" % pincfg_path)
         pin3.set_cfg({'groups':'a',
                       'start':'00:20',
                       'prio':'2',
                       'duration':'10',
                       })
-        pin4 = GpioPin(self.opt, "%s/pin4.cfg" % pincfg_path)
+        pin4 = SlavePin(self.opt, "%s/pin4.cfg" % pincfg_path)
         pin4.set_cfg({'groups':'b',
                       'start':'00:00',
                       'prio':'0',
                       'duration':'10',
                       })
+        pin5 = MainPin(self.opt, "%s/pin5.cfg" % pincfg_path)
+        pin5.set_cfg({'groups':'b'})
         exp_items = {
             'gpio_pins': {
                 '1': pin1,
                 '2': pin2,
                 '3': pin3,
                 '4': pin4,
+                '5': pin5,
             }
         }
         ctrl.arrange_pins()

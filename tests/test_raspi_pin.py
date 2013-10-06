@@ -3,7 +3,8 @@ import os
 import argparse
 import datetime
 from ConfigParser import ConfigParser
-from raspi.pin import GpioPin, PIN_MODES, get_mode_id
+from raspi.pin import SlavePin, MainPin, PIN_MODES, get_mode_id
+from raspi import PinError
 
 PREFIX = os.environ.get("WORKSPACE", "./")
 if not PREFIX.endswith("/"):
@@ -16,7 +17,7 @@ class TestRaspiPin(unittest.TestCase):
             "--dry-run":True,
             '-d':1,
         }
-        self.pin0 = GpioPin(self.opt)
+        self.pin0 = SlavePin(self.opt)
         self.skip_keys = ['opt']
 
     def check_dict(self, pin, exp_items):
@@ -64,7 +65,7 @@ class TestRaspiPin(unittest.TestCase):
         Pin >0_1> check items in initial __dict__ from test1.cfg
         """
         test1_file = "%s/packaged/etc/raspigpioctrl/pin1.cfg" % PREFIX
-        pin1 = GpioPin(self.opt, test1_file)
+        pin1 = SlavePin(self.opt, test1_file)
         pin1.init_pin(True)
             
         exp_items = {
@@ -75,11 +76,11 @@ class TestRaspiPin(unittest.TestCase):
             'prio': '0',
             'mode': 'time',
             'groups': 'garden',
-            'start': '01:00',
-            'duration': '60',
+            'start': '00:00',
+            'duration': '0',
             'sun_delay': '0',
             'state': '0',
-            'dow': 'Wed,Sun',
+            'dow': 'Mon,Tue,Wed,Thu,Fr,Sat,Sun',
             'gpio_base': "%spackaged/sys/class/gpio" % PREFIX,
             'pin_base': "%spackaged/sys/class/gpio/gpio1" % PREFIX,
         }
@@ -89,7 +90,7 @@ class TestRaspiPin(unittest.TestCase):
         """
         Pin >0_3> change cfg of init_pin
         """
-        pin = GpioPin(self.opt)
+        pin = SlavePin(self.opt)
         exp_items = {
             'crypt': None,
             'pin_nr': '0',
@@ -155,7 +156,7 @@ class TestRaspiPin(unittest.TestCase):
         cfg_file = '%s/misc/tmp_test.cfg' % PREFIX
         if os.path.exists(cfg_file):
             os.remove(cfg_file)
-        pin = GpioPin(self.opt)
+        pin = SlavePin(self.opt)
         pin.write_cfg(cfg_file)
         self.assertTrue(pin.crypt == '9ec78ec1ae354d5cd568a90ab2f1493a',
                         "CRYPT: %s" % pin.crypt)
@@ -166,7 +167,7 @@ class TestRaspiPin(unittest.TestCase):
         Pin >2_1> Write real pin1 cfg
         """
         test1_cfg = "%s/packaged/etc/raspigpioctrl/pin1.cfg" % PREFIX
-        pin = GpioPin(self.opt, test1_cfg)
+        pin = SlavePin(self.opt, test1_cfg)
         pin.start = "10:00"
         pin.duration = "30"
         pin.dow = "Fri,Sat,Sun"
@@ -183,7 +184,7 @@ class TestRaspiPin(unittest.TestCase):
         Pin >2_2> Write cfg with changed cfg-file in background (IOError)
         """
         test1_cfg = "%s/packaged/etc/raspigpioctrl/pin1.cfg" % PREFIX
-        pin = GpioPin(self.opt, test1_cfg)
+        pin = SlavePin(self.opt, test1_cfg)
         cfg = {
             'start': "10:00",
             'duration': "30",
@@ -208,7 +209,7 @@ class TestRaspiPin(unittest.TestCase):
         Pin >3_0> init dry-run pin
         """
         test1_file = "%s/packaged/etc/raspigpioctrl/pin1.cfg" % PREFIX
-        pin1 = GpioPin(self.opt, test1_file)
+        pin1 = SlavePin(self.opt, test1_file)
         gpio_sys = "%s/packaged/sys/class/gpio/" % PREFIX
         if os.path.exists("%s/packaged/sys" % PREFIX):
             print os.system("rm -rf %s/packaged/sys" % PREFIX)
@@ -219,12 +220,41 @@ class TestRaspiPin(unittest.TestCase):
         cont = filed.read().strip()
         self.assertTrue(cont == "0", cont)
 
+    def test3_0_1_pin(self):
+        """
+        Pin >3_0_1> init main pin
+        """
+        test_file = "%s/packaged/etc/raspigpioctrl/main5.cfg" % PREFIX
+        pin = MainPin(self.opt, test_file)
+        gpio_sys = "%s/packaged/sys/class/gpio/" % PREFIX
+        if os.path.exists("%s/packaged/sys" % PREFIX):
+            print os.system("rm -rf %s/packaged/sys" % PREFIX)
+            pin.deb("'%s' removed")
+            self.assertFalse(os.path.exists(gpio_sys), "")
+        pin.init_pin()
+        filed = open("%s/gpio5/value" % gpio_sys, "r")
+        cont = filed.read().strip()
+        self.assertTrue(cont == "0", cont)
+        pin.flip()
+        filed = open("%s/gpio5/value" % gpio_sys, "r")
+        cont = filed.read().strip()
+        self.assertTrue(cont == "1", cont)
+        pin.flip()
+        filed = open("%s/gpio5/value" % gpio_sys, "r")
+        cont = filed.read().strip()
+        self.assertTrue(cont == "0", cont)
+        pin.change_mode('on')
+        pin.flip()
+        filed = open("%s/gpio5/value" % gpio_sys, "r")
+        cont = filed.read().strip()
+        self.assertTrue(cont == "0", cont)
+
     def test3_1_pin(self):
         """
         Pin >3_1> read_real_life()
         """
         test1_file = "%s/packaged/etc/raspigpioctrl/pin1.cfg" % PREFIX
-        pin1 = GpioPin(self.opt, test1_file)
+        pin1 = SlavePin(self.opt, test1_file)
         self.assertTrue("0" == pin1.read_real_life())
         pin1.flip()
         self.assertTrue("1" == pin1.read_real_life())
@@ -234,7 +264,7 @@ class TestRaspiPin(unittest.TestCase):
         Pin >3_2> init dry-run pin and set_pin(1) / set_pin(0)
         """
         test1_file = "%s/packaged/etc/raspigpioctrl/pin1.cfg" % PREFIX
-        pin1 = GpioPin(self.opt, test1_file)
+        pin1 = SlavePin(self.opt, test1_file)
         gpio_sys = "%s/packaged/sys/class/gpio/" % PREFIX
         if os.path.exists("%s/packaged/sys" % PREFIX):
             print os.system("rm -rf %s/packaged/sys" % PREFIX)
@@ -257,7 +287,7 @@ class TestRaspiPin(unittest.TestCase):
         Pin >3_3> init dry-run pin and flip twice
         """
         test1_file = "%s/packaged/etc/raspigpioctrl/pin1.cfg" % PREFIX
-        pin1 = GpioPin(self.opt, test1_file)
+        pin1 = SlavePin(self.opt, test1_file)
         gpio_sys = "%s/packaged/sys/class/gpio/" % PREFIX
         if os.path.exists("%s/packaged/sys" % PREFIX):
             print os.system("rm -rf %s/packaged/sys" % PREFIX)
@@ -292,7 +322,7 @@ class TestRaspiPin(unittest.TestCase):
         """
         Pin >4_1> check datetime for runtime including midnight
         """
-        pin = GpioPin(self.opt)
+        pin = SlavePin(self.opt)
         pin.set_cfg({'start': '23:30', 'duration': '60'})
         now = datetime.datetime.now()
         exp_on = datetime.datetime(year=now.year,
@@ -312,11 +342,11 @@ class TestRaspiPin(unittest.TestCase):
         """
         Pin >5_0> Change mode to time, manual, sun
         """
-        pin = GpioPin(self.opt)
+        pin = SlavePin(self.opt)
         pin.change_mode("time")
         self.assertTrue(pin.mode == "time")
-        pin.change_mode("manual")
-        self.assertTrue(pin.mode == "manual")
+        pin.change_mode("man")
+        self.assertTrue(pin.mode == "man")
         pin.change_mode("sun")
         with self.assertRaises(ValueError):
             pin.change_mode("buh")
@@ -327,7 +357,7 @@ class TestRaspiPin(unittest.TestCase):
         """
         Pin >5_0> Change mode to FooBar, expecting ValueError
         """
-        pin = GpioPin(self.opt)
+        pin = SlavePin(self.opt)
         self.assertRaises(ValueError, pin.change_mode, ("FooBar"))
 
     def test6_0_get_id(self):
@@ -335,7 +365,7 @@ class TestRaspiPin(unittest.TestCase):
         Pin >6_0> Get identifier for sorting pin-list in GpioCtrl
         """
         test1_file = "%s/packaged/etc/raspigpioctrl/pin1.cfg" % PREFIX
-        pin1 = GpioPin(self.opt, test1_file)
+        pin1 = SlavePin(self.opt, test1_file)
         self.assertTrue(pin1.get_id() == "1")
 
     def test7_0_eq(self):
@@ -343,7 +373,7 @@ class TestRaspiPin(unittest.TestCase):
         Pin >7_0> self.__eq__(other) True
         """
         lst = []
-        pin0 = GpioPin(self.opt)
+        pin0 = SlavePin(self.opt)
         pin0.set_cfg({
             'groups':'garden',
             'pin_nr': '4',
@@ -351,7 +381,7 @@ class TestRaspiPin(unittest.TestCase):
             'prio': '0',
             'duration': '10',
         })
-        pin1 = GpioPin(self.opt)
+        pin1 = SlavePin(self.opt)
         pin1.set_cfg({
             'groups':'garden',
             'pin_nr': '3',
@@ -359,7 +389,7 @@ class TestRaspiPin(unittest.TestCase):
             'prio': '0',
             'duration': '10',
         })
-        pin2 = GpioPin(self.opt)
+        pin2 = SlavePin(self.opt)
         pin2.set_cfg({
             'groups':'garden',
             'pin_nr': '3',
@@ -377,7 +407,7 @@ class TestRaspiPin(unittest.TestCase):
         Pin >7_1> self.__ne__(other) True
         """
         lst = []
-        pin0 = GpioPin(self.opt)
+        pin0 = SlavePin(self.opt)
         pin0.set_cfg({
             'groups':'garden',
             'pin_nr': '4',
@@ -385,7 +415,7 @@ class TestRaspiPin(unittest.TestCase):
             'prio': '0',
             'duration': '10',
         })
-        pin1 = GpioPin(self.opt)
+        pin1 = SlavePin(self.opt)
         pin1.set_cfg({
             'groups':'garden',
             'pin_nr': '3',
@@ -393,7 +423,7 @@ class TestRaspiPin(unittest.TestCase):
             'prio': '0',
             'duration': '10',
         })
-        pin2 = GpioPin(self.opt)
+        pin2 = SlavePin(self.opt)
         pin2.set_cfg({
             'groups':'garden',
             'pin_nr': '3',
@@ -411,7 +441,7 @@ class TestRaspiPin(unittest.TestCase):
         Pin >7_2> self.__lt__(other)
         """
         lst = []
-        pin0 = GpioPin(self.opt)
+        pin0 = SlavePin(self.opt)
         pin0.set_cfg({
             'groups':'garden',
             'pin_nr': '4',
@@ -419,14 +449,14 @@ class TestRaspiPin(unittest.TestCase):
             'prio': '0',
             'duration': '10',
         })
-        pin1 = GpioPin(self.opt)
+        pin1 = SlavePin(self.opt)
         pin1.set_cfg({
             'pin_nr': '3',
             'start': '00:10',
             'prio': '0',
             'duration': '10',
         })
-        pin2 = GpioPin(self.opt)
+        pin2 = SlavePin(self.opt)
         pin2.set_cfg({
             'groups':'garden',
             'pin_nr': '3',
@@ -434,7 +464,7 @@ class TestRaspiPin(unittest.TestCase):
             'prio': '1',
             'duration': '10',
         })
-        pin3 = GpioPin(self.opt)
+        pin3 = SlavePin(self.opt)
         pin3.set_cfg({
             'groups':'garden',
             'pin_nr': '3',
@@ -460,7 +490,7 @@ class TestRaspiPin(unittest.TestCase):
         Pin >7_3> self.__le__(other)
         """
         lst = []
-        pin0 = GpioPin(self.opt)
+        pin0 = SlavePin(self.opt)
         pin0.set_cfg({
             'groups':'garden',
             'pin_nr': '4',
@@ -468,7 +498,7 @@ class TestRaspiPin(unittest.TestCase):
             'prio': '0',
             'duration': '10',
         })
-        pin1 = GpioPin(self.opt)
+        pin1 = SlavePin(self.opt)
         pin1.set_cfg({
             'groups':'garden',
             'pin_nr': '3',
@@ -476,7 +506,7 @@ class TestRaspiPin(unittest.TestCase):
             'prio': '0',
             'duration': '10',
         })
-        pin2 = GpioPin(self.opt)
+        pin2 = SlavePin(self.opt)
         pin2.set_cfg({
             'groups':'garden',
             'pin_nr': '3',
@@ -484,7 +514,7 @@ class TestRaspiPin(unittest.TestCase):
             'prio': '1',
             'duration': '10',
         })
-        pin3 = GpioPin(self.opt)
+        pin3 = SlavePin(self.opt)
         pin3.set_cfg({
             'groups':'garden',
             'pin_nr': '3',
@@ -492,7 +522,7 @@ class TestRaspiPin(unittest.TestCase):
             'prio': '0',
             'duration': '20',
         })
-        pin4 = GpioPin(self.opt)
+        pin4 = SlavePin(self.opt)
         pin4.set_cfg({
             'groups':'garden',
             'pin_nr': '4',
@@ -526,7 +556,7 @@ class TestRaspiPin(unittest.TestCase):
         Pin >7_4> self.__gt__(other)
         """
         lst = []
-        pin0 = GpioPin(self.opt)
+        pin0 = SlavePin(self.opt)
         pin0.set_cfg({
             'groups':'garden',
             'pin_nr': '4',
@@ -534,7 +564,7 @@ class TestRaspiPin(unittest.TestCase):
             'prio': '0',
             'duration': '10',
         })
-        pin1 = GpioPin(self.opt)
+        pin1 = SlavePin(self.opt)
         pin1.set_cfg({
             'groups':'garden',
             'pin_nr': '3',
@@ -542,7 +572,7 @@ class TestRaspiPin(unittest.TestCase):
             'prio': '0',
             'duration': '10',
         })
-        pin2 = GpioPin(self.opt)
+        pin2 = SlavePin(self.opt)
         pin2.set_cfg({
             'groups':'garden',
             'pin_nr': '3',
@@ -550,7 +580,7 @@ class TestRaspiPin(unittest.TestCase):
             'prio': '1',
             'duration': '10',
         })
-        pin3 = GpioPin(self.opt)
+        pin3 = SlavePin(self.opt)
         pin3.set_cfg({
             'groups':'garden',
             'pin_nr': '3',
@@ -558,7 +588,7 @@ class TestRaspiPin(unittest.TestCase):
             'prio': '0',
             'duration': '20',
         })
-        pin4 = GpioPin(self.opt)
+        pin4 = SlavePin(self.opt)
         pin4.set_cfg({
             'groups':'garden',
             'pin_nr': '4',
@@ -586,7 +616,7 @@ class TestRaspiPin(unittest.TestCase):
         Pin >7_5> self.__ge__(other)
         """
         lst = []
-        pin0 = GpioPin(self.opt)
+        pin0 = SlavePin(self.opt)
         pin0.set_cfg({
             'groups':'garden',
             'pin_nr': '4',
@@ -594,7 +624,7 @@ class TestRaspiPin(unittest.TestCase):
             'prio': '0',
             'duration': '10',
         })
-        pin1 = GpioPin(self.opt)
+        pin1 = SlavePin(self.opt)
         pin1.set_cfg({
             'groups':'garden',
             'pin_nr': '3',
@@ -602,7 +632,7 @@ class TestRaspiPin(unittest.TestCase):
             'prio': '0',
             'duration': '10',
         })
-        pin2 = GpioPin(self.opt)
+        pin2 = SlavePin(self.opt)
         pin2.set_cfg({
             'groups':'garden',
             'pin_nr': '3',
@@ -610,7 +640,7 @@ class TestRaspiPin(unittest.TestCase):
             'prio': '1',
             'duration': '10',
         })
-        pin3 = GpioPin(self.opt)
+        pin3 = SlavePin(self.opt)
         pin3.set_cfg({
             'groups':'garden',
             'pin_nr': '3',
@@ -618,7 +648,7 @@ class TestRaspiPin(unittest.TestCase):
             'prio': '0',
             'duration': '20',
         })
-        pin4 = GpioPin(self.opt)
+        pin4 = SlavePin(self.opt)
         pin4.set_cfg({
             'groups':'garden',
             'pin_nr': '4',
@@ -649,7 +679,7 @@ class TestRaspiPin(unittest.TestCase):
         """
         Pin >8_0> trigger off
         """
-        pin = GpioPin(self.opt)
+        pin = SlavePin(self.opt)
         now = datetime.datetime.now()
         delay = datetime.timedelta(seconds=600)
         temp_on = now - delay
@@ -676,7 +706,7 @@ class TestRaspiPin(unittest.TestCase):
         """
         Pin >8_1> trigger on
         """
-        pin = GpioPin(self.opt)
+        pin = SlavePin(self.opt)
         now = datetime.datetime.now()
         delay = datetime.timedelta(seconds=60)
         temp_on = now + delay

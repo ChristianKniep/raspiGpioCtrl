@@ -35,7 +35,7 @@ class Web(object):
         Global function to create row for pin
         """
         pin_json = self.gpio_pins[gpio].get_json()
-        if pin_json['groups'] == "main":
+        if 'main' in pin_json['groups'].split(","):
             self.create_row_main(gpio)
         else:
             self.create_row_slave(gpio)
@@ -60,7 +60,7 @@ class Web(object):
             state_col = 'green'
         self.html.append("<td style='background-color:%s'>" % state_col)
         self.html.append("<input name='send' type='submit' value='flip'></td>")
-        if pin_json['mode'] == "off":
+        if pin_json['state'] == "0":
             state_col = 'red'
         else:
             state_col = 'green'
@@ -153,7 +153,6 @@ class Web(object):
         """ Creates table to show the different gpiopins
         """
         for gpio in self.gpio_pins.keys():
-            print gpio
             self.create_row(gpio)
 
     @cherrypy.expose
