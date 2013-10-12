@@ -26,6 +26,19 @@ class GpioCtrl(object):
         """
         self.gpio_pins[pin.get_id()] = pin
 
+    def show_pins(self):
+        """
+        prints strings
+        """
+        for pin_id, pin in self.gpio_pins.items():
+            print pin_id
+
+    def get_pin(self, pin_id):
+        """
+        return pin instance
+        """
+        return self.gpio_pins[str(pin_id)]
+
     def read_cfg(self, force_init=True):
         """
         read cfg file and update gpio_pins dict
@@ -40,12 +53,31 @@ class GpioCtrl(object):
                 pin.init_pin(force_init)
                 self.gpio_pins[pin.get_id()] = pin
 
-    def flip(self, pin_id):
+    def flip(self, flip_pin_id):
         """
         flip the value of the given pin_identifier
         """
-        assert pin_id in self.gpio_pins.keys()
-        self.gpio_pins[pin_id].flip()
+        assert flip_pin_id in self.gpio_pins.keys()
+        fpin = self.gpio_pins[flip_pin_id]
+        if isinstance(fpin, MainPin):
+            fpin.flip()
+            return
+        # if it's a SlavePin we continue
+        if fpin.state == "1":
+            # if the pin is to be turned off, we do not care about main-pins
+            fpin.flip()
+            assert fpin.isstate(0)
+        else:
+            # if we are about to fire him up, we care
+            main_block = False
+            for pin_id, pin in self.gpio_pins.items():
+                if isinstance(pin, MainPin):
+                    if pin.mode == "off" and pin.isstate(0):
+                        # nothing we can do about it, user wants to stay put
+                        main_block = True
+            if not main_block:
+                fpin.flip()
+                assert fpin.isstate(1)
 
     def set_pin(self, pin_id, val):
         """
@@ -69,6 +101,8 @@ class GpioCtrl(object):
         # for every group the
         grp_times = {}
         for pin in self.gpio_pins.values():
+            if isinstance(pin, MainPin):
+                continue
             grp = pin.get_groups()
             if grp not in grp_times.keys():
                 grp_times[grp] = []
@@ -88,8 +122,12 @@ class GpioCtrl(object):
         iterate over pins.
         """
         for pin in self.gpio_pins.values():
+            if isinstance(pin, MainPin):
+                continue
             #-> first turn off
             pin.trigger_off(dt)
         for pin in self.gpio_pins.values():
+            if isinstance(pin, MainPin):
+                continue
             # -> after turn on (to avoid overlapping)
             pin.trigger_on(dt)

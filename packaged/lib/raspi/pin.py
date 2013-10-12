@@ -168,7 +168,6 @@ class BasePin(object):
         returns True if file exists
         """
         pfad = "%s/value" % (self.pin_base)
-        print pfad
         return os.path.exists(pfad)
 
     def set_pin(self, val):
@@ -179,6 +178,18 @@ class BasePin(object):
         cmd = "echo %s > %s" % (val, pfad)
         err = os.system(cmd)
         self.state = str(val)
+
+    def isstate(self, state):
+        """
+        compares state
+        """
+        return self.state == str(state)
+
+    def ismode(self, mode):
+        """
+        compares modes
+        """
+        return self.mode == mode
 
 
 
@@ -396,6 +407,7 @@ class MainPin(BasePin):
         super(MainPin, self).__init__(opt, cfg_file)
         self.mode = "off"
 
+
     def get_json(self):
         """
         return json
@@ -450,3 +462,4 @@ class MainPin(BasePin):
             self.set_pin(1)
         else:
             self.set_pin(0)
+

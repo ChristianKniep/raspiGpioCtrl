@@ -25,6 +25,8 @@ class TestRaspiGpio(unittest.TestCase):
         """
         check __dict__ for expected items
         """
+        pprint(ctrl)
+        print "####"
         def_items = {}
         for key, val in self.def_items.items():
             if exp_items is not None and key in exp_items.keys():
@@ -38,6 +40,8 @@ class TestRaspiGpio(unittest.TestCase):
             if key == "gpio_pins":
                 # check json of each gpiopin
                 for pin_key, pin_inst in val.items():
+                    if isinstance(pin_inst, MainPin):
+                        continue
                     got = pin_inst.get_json()
                     exp = def_items[key][pin_key].get_json()
                     amsg = "\nEXP\n%s\n" % exp
@@ -54,6 +58,17 @@ class TestRaspiGpio(unittest.TestCase):
             del def_items[key]
         amsg = "instance has items left: %s" % ','.join(def_items)
         self.assertTrue(len(def_items) == 0, amsg)
+
+    def check_pin(self, pinid, val):
+        """
+        checks pin for value based on $path/value
+        """
+        gpio_sys = "%s/packaged/sys/class/gpio/" % PREFIX
+        filed = open("%s/gpio%s/value" % (gpio_sys, pinid), "r")
+        cont = filed.read().strip()
+        filed.close()
+        amsg = "pin_id '%s': cur:%s / exp:%s" % (pinid, cont, val)
+        self.assertTrue(cont == str(val), amsg)
 
     def teardown(self):
         print ("TestUM:teardown() after each test method")
@@ -94,43 +109,58 @@ class TestRaspiGpio(unittest.TestCase):
         """
         ctrl = GpioCtrl(self.opt)
         ctrl.read_cfg()
+        ctrl.set_pin('5', 1)
+        self.check_pin(5, 1)
         ctrl.flip('2')
-        gpio_sys = "%s/packaged/sys/class/gpio/" % PREFIX
-        filed = open("%s/gpio2/value" % gpio_sys, "r")
-        cont = filed.read().strip()
-        filed.close()
-        self.assertTrue(cont == "1", cont)
+        self.check_pin(2, 1)
         ctrl.flip('2')
-        gpio_sys = "%s./packaged/sys/class/gpio/" % PREFIX
-        filed = open("%s/gpio2/value" % gpio_sys, "r")
-        cont = filed.read().strip()
-        filed.close()
-        self.assertTrue(cont == "0", cont)
+        self.check_pin(2, 0)
 
     def test2_1_flip_main(self):
         """
-        GpioCtrl >2_1> flip pin2 w/ and w/o main pin be set
+        GpioCtrl >2_1> flip pin2 w/ and w/o main pin be set (manually)
         """
         ctrl = GpioCtrl(self.opt)
         ctrl.read_cfg()
-        ctrl.set_pin('2', 0)
+        # set the main-pin to 0
+        ctrl.set_pin('5', 0)
+        self.check_pin(5, 0)
+        ctrl.set_pin('1', 0)
+        self.check_pin(1, 0)
         main_cfg = {
             'groups': 'garden',
         }
         ctrl.set_pin_cfg('5', main_cfg)
-        ctrl.flip('2')
-        gpio_sys = "%s/packaged/sys/class/gpio/" % PREFIX 
-        filed = open("%s/gpio2/value" % gpio_sys, "r")
-        cont = filed.read().strip()
-        filed.close()
-        self.assertTrue(cont == "0", cont)
+        pin5 = ctrl.get_pin(5)
+        pin5.change_mode('off')
+        pprint(pin5.get_json())
+        ctrl.flip('1')
+        # should be still 0, since pin5 as main-pin does not allow a switch
+        self.check_pin(1, 0)
         ctrl.flip('5')
-        ctrl.flip('2')
-        gpio_sys = "%s/packaged/sys/class/gpio/" % PREFIX
-        filed = open("%s/gpio2/value" % gpio_sys, "r")
-        cont = filed.read().strip()
-        filed.close()
-        self.assertTrue(cont == "1", cont)
+        self.check_pin(5, 1)
+        ctrl.flip('1')
+        # should be still 0, since pin5 as main-pin does not allow a switch
+        self.check_pin(1, 1)
+
+    def test2_2_flip_main_auto(self):
+        """
+        GpioCtrl >2_2> flip pin1 with main pin set to on (auto)
+        """
+        ctrl = GpioCtrl(self.opt)
+        ctrl.read_cfg()
+        # set the main-pin to 0
+        ctrl.set_pin('5', 0)
+        self.check_pin(5, 0)
+        ctrl.set_pin('1', 0)
+        self.check_pin(1, 0)
+        main_cfg = {
+            'groups': 'garden',
+            }
+        ctrl.set_pin_cfg('5', main_cfg)
+        pin5 = ctrl.get_pin(5)
+        pin5.change_mode('off')
+        pprint(pin5.get_json())
 
     def test3_0_check_arrangement(self):
         """
@@ -213,7 +243,7 @@ class TestRaspiGpio(unittest.TestCase):
                       'prio':'0',
                       'duration':'10',
                       })
-        pin5 = MainPin(self.opt, "%s/pin5.cfg" % pincfg_path)
+        pin5 = MainPin(self.opt, "%s/main5.cfg" % pincfg_path)
         pin5.set_cfg({'groups':'b'})
         exp_items = {
             'gpio_pins': {
@@ -297,11 +327,15 @@ class TestRaspiGpio(unittest.TestCase):
         ctrl.set_pin_cfg('3', {'start':'00:15'})
         print "### Before arrange"
         for key, item  in ctrl.gpio_pins.items():
-            print key, item.get_dt_on(), item.get_dt_off()
+            if isinstance(item, MainPin):
+                print "MainPin: ", key
+            else:
+                print "SlavePin: ", key, item.get_dt_on(), item.get_dt_off()
         ctrl.arrange_pins(True)
         print "### After arrange"
         for key, item  in ctrl.gpio_pins.items():
-            print key, item.get_dt_on(), item.get_dt_off()
+            if not isinstance(item, MainPin):
+                print "SlavePin: ", key, item.get_dt_on(), item.get_dt_off()
         # t0
         dt = self.create_dt(5, 0)
         ctrl.trigger_pins(dt)
@@ -319,8 +353,7 @@ class TestRaspiGpio(unittest.TestCase):
         self.check_pins(ctrl, mask)
 
     @staticmethod
-    def create_dt(t_minute=None, t_hour=None,
-                  t_day=None, t_month=None, t_year=None):
+    def create_dt(t_minute=None, t_hour=None, t_day=None, t_month=None, t_year=None):
         """
         returns datetime
         """
