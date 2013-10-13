@@ -16,9 +16,10 @@ class TestRaspiWeb(unittest.TestCase):
             "-r":"packaged",
             "--dry-run":True,
             "--no-read":True,
+            "--test":'None',
             '-d':1,
         }
-        self.exp = [
+        self.exp_head = [
             '<html><head>',
             '<title>web.py</title></head><body><table border="1">',
             '<tr align="center">',
@@ -33,8 +34,10 @@ class TestRaspiWeb(unittest.TestCase):
             '<td>Dauer</td>',
             '<td>Sonnenverzoegerung</td>',
             '</tr>',
+            ]
+        self.exp_pin1 = [
             '<tr>',
-            '<form method="POST">',
+            '<form method="POST" action="update_slave">',
             '<td><b>1</b></td>',
             '<td><b>Front</b></td>',
             "<td><input type='text' name='groups' value='garden' size='10'></td>",
@@ -68,6 +71,28 @@ class TestRaspiWeb(unittest.TestCase):
             "<td><input name='send' type='submit' value='change'></td>",
             '</form>',
             '</tr>',
+            ]
+        self.exp_main5 = [
+            "<tr>",
+            '<form method="POST" action="update_main">',
+            "<td><b>5</b></td>",
+            "<td><b>Mainrelay</b></td>",
+            "<td>group</td>",
+            "<input type='hidden' name='gpio' value='5'>",
+            "<td style='background-color:red'>",
+            "<input name='send' type='submit' value='flip'></td>",
+            "<td style='background-color:red'>",
+            "<input name='send' type='submit' value='OFF'><input name='send' type='submit' value='AUTO'></td>",
+            "<td></td>",
+            "<td></td>",
+            "<td></td>",
+            "<td></td>",
+            "<td></td>",
+            "<td><input name='send' type='submit' value='change'></td>",
+            "</form>",
+            '</tr>'
+        ]
+        self.exp_tail = [
             '</table>',
             '</body></html>'
         ]
@@ -102,9 +127,12 @@ class TestRaspiWeb(unittest.TestCase):
         web = Web(self.opt)
         web.add_pin(pin1)
         web.index()
-        exp = [line for line in self.exp]
+        exp = [line for line in self.exp_head]
+        exp.extend([line for line in self.exp_pin1])
+        exp.extend([line for line in self.exp_tail])
         exp[20] = "<td style='background-color:red'>"
-        self.check_web(web.html, exp)
+        got = web.html
+        self.check_web(got, exp)
 
     def test0_1_init_flip(self):
         """
@@ -119,7 +147,9 @@ class TestRaspiWeb(unittest.TestCase):
         web = Web(self.opt)
         web.add_pin(pin1)
         web.index()
-        exp = [line for line in self.exp]
+        exp = [line for line in self.exp_head]
+        exp.extend([line for line in self.exp_pin1])
+        exp.extend([line for line in self.exp_tail])
         exp[20] = "<td style='background-color:green'>"
         self.assertEqual(web.html, exp)
 
@@ -135,59 +165,11 @@ class TestRaspiWeb(unittest.TestCase):
         web = Web(self.opt)
         web.add_pin(pin1)
         web.index()
-        exp = [
-            '<html><head>',
-            '<title>web.py</title></head><body><table border="1">',
-            '<tr align="center">',
-            '<td>PinID</td>',
-            '<td>Name</td>',
-            '<td>Groups</td>',
-            '<td>Status</td>',
-            '<td>Modus</td>',
-            '<td>Prio</td>',
-            '<td>An um</td>',
-            '<td>Wochentage</td>',
-            '<td>Dauer</td>',
-            '<td>Sonnenverzoegerung</td>',
-            '</tr>',
-            '<tr>',
-            '<form method="POST">',
-            '<td><b>1</b></td>',
-            '<td><b>Front</b></td>',
-            "<td><input type='text' name='groups' value='garden' size='10'></td>",
-            "<input type='hidden' name='gpio' value='1'>",
-            "<td style='background-color:red'>",
-            "<input name='send' type='submit' value='flip'></td>",
-            '<td>',
-            "<input type='radio' name='mode' value='time' checked>time",
-            "<input type='radio' name='mode' value='sun'>sun",
-            "<input type='radio' name='mode' value='man'>man",
-            "<td><select name='prio'>",
-            "<option value='0'selected>0</option>",
-            "<option value='1'>1</option>",
-            "<option value='2'>2</option>",
-            "<option value='3'>3</option>",
-            "<option value='4'>4</option>",
-            '</select></td>',
-            '</td>',
-            "<td><input type='text' name='start' value='00:00' size='5'>(24h)</td>",
-            '<td>',
-            "<input type='checkbox' name='dow_Mon' value='Mon' checked>Mon",
-            "<input type='checkbox' name='dow_Tue' value='Tue' checked>Tue",
-            "<input type='checkbox' name='dow_Wed' value='Wed' checked>Wed",
-            "<input type='checkbox' name='dow_Thu' value='Thu' checked>Thu",
-            "<input type='checkbox' name='dow_Fri' value='Fri' checked>Fri",
-            "<input type='checkbox' name='dow_Sat' value='Sat' checked>Sat",
-            "<input type='checkbox' name='dow_Sun' value='Sun' checked>Sun",
-            '</td>',
-            "<td><input type='text' name='duration' value='0' size='5'>min</td>",
-            "<td><input type='text' name='sun_delay' value='0' size='5'>min</td>",
-            "<td><input name='send' type='submit' value='change'></td>",
-            '</form>',
-            '</tr>',
-            '</table>',
-            '</body></html>'
-        ]
+        exp = [line for line in self.exp_head]
+        exp.extend([line for line in self.exp_pin1])
+        exp.extend([line for line in self.exp_tail])
+        exp[20] = "<td style='background-color:red'>"
+        exp[40] = "<input type='checkbox' name='dow_Fri' value='Fri' checked>Fri"
         self.check_web(web.html, exp)
 
     def test0_3_flip(self):
@@ -201,12 +183,14 @@ class TestRaspiWeb(unittest.TestCase):
         
         web = Web(self.opt)
         web.add_pin(pin1)
-        web.index(send='flip', gpio='1')
-        exp = [line for line in self.exp]
+        web.update_slave(send='flip', gpio='1')
+        exp = [line for line in self.exp_head]
+        exp.extend([line for line in self.exp_pin1])
+        exp.extend([line for line in self.exp_tail])
         exp[39] = "<input type='checkbox' name='dow_Thu' value='Thu'>Thu"
         exp[40] = "<input type='checkbox' name='dow_Fri' value='Fri' checked>Fri"
         self.check_web(web.html, exp)
-        web.index(send='flip', gpio='1')
+        web.update_slave(send='flip', gpio='1')
         exp[20] = "<td style='background-color:red'>"
         self.check_web(web.html, exp)
 
@@ -223,8 +207,102 @@ class TestRaspiWeb(unittest.TestCase):
         
         web = Web(self.opt)
         web.add_pin(pin1)
-        web.index(send='change', mode='sun', gpio='1')
+        web.update_slave(send='change', mode='sun', gpio='1')
         self.assertTrue(web.gctrl.gpio_pins['1'].get_json()['mode'] == 'sun')
+
+    def test1_0_main(self):
+        """
+        Web >1_0> main pin plus pin1
+        """
+        pin1_file = "%s/packaged/etc/raspigpioctrl/pin1.cfg" % PREFIX
+        pin1 = SlavePin(self.opt, pin1_file)
+        pin1.init_pin(True)
+        pin1.set_pin(0)
+        pin1.set_cfg({'dow':'Mon,Tue,Wed,Thu,Fri,Sat,Sun'})
+        self.assertTrue(pin1.isstate(0))
+        pin5_file = "%s/packaged/etc/raspigpioctrl/main5.cfg" % PREFIX
+        pin5 = MainPin(self.opt, pin5_file)
+        pin5.init_pin(True)
+        pin5.set_cfg({'groups':'garden'})
+        pprint(pin5.get_json())
+        pin5.change_mode('off')
+        pin5.set_pin(0)
+        self.assertTrue(pin5.isstate(0))
+
+        web = Web(self.opt)
+        web.add_pin(pin1)
+        web.add_pin(pin5)
+        web.index()
+        exp = [line for line in self.exp_head]
+        exp.extend([line for line in self.exp_pin1])
+        exp.extend([line for line in self.exp_main5])
+        exp.extend([line for line in self.exp_tail])
+        exp[20] = "<td style='background-color:red'>"
+        exp[40] = "<input type='checkbox' name='dow_Fri' value='Fri' checked>Fri"
+        got = web.html
+        self.check_web(got, exp)
+        pin5.change_mode('auto')
+        web.index()
+        exp[55] = "<td style='background-color:red'>"
+        exp[57] = "<td style='background-color:green'>"
+        got = web.html
+        self.check_web(got, exp)
+
+    def test2_0_change(self):
+        """
+        Web >2_0> change main pin through web-class
+        """
+        exp = [line for line in self.exp_head]
+        exp.extend([line for line in self.exp_pin1])
+        exp.extend([line for line in self.exp_main5])
+        exp.extend([line for line in self.exp_tail])
+        opt = self.opt.copy()
+        opt['--test'] = "test1"
+        web = Web(opt)
+        web.index()
+        got = web.html
+        exp[17] = '<td><b>TestPin1</b></td>'
+        exp[18] = "<td><input type='text' name='groups' value='grpA' size='10'></td>"
+        exp[20] = "<td style='background-color:red'>"
+        exp[34] = "<td><input type='text' name='start' value='01:00' size='5'>(24h)</td>"
+        exp[40] = "<input type='checkbox' name='dow_Fri' value='Fri' checked>Fri"
+        exp[44] = "<td><input type='text' name='duration' value='60' size='5'>min</td>"
+        exp[52] = "<td><b>MainPin5</b></td>"
+        exp[55] = "<td style='background-color:red'>"
+        exp[57] = "<td style='background-color:red'>"
+        self.check_web(got, exp)
+        # should not happen
+        web.update_slave(gpio='1', send='flip')
+        got = web.html
+        self.check_web(got, exp)
+        # flip state=on
+        web.update_main(gpio='5', send='flip')
+        got = web.html
+        exp[55] = "<td style='background-color:green'>"
+        self.check_web(got, exp)
+        # should happen
+        web.update_slave(gpio='1', send='flip')
+        got = web.html
+        exp[20] = "<td style='background-color:green'>"
+        self.check_web(got, exp)
+        # flip state=off
+        web.update_main(gpio='5', send='flip')
+        got = web.html
+        exp[20] = "<td style='background-color:red'>"
+        exp[55] = "<td style='background-color:red'>"
+        self.check_web(got, exp)
+        web.update_main(gpio='5', send='AUTO')
+        got = web.html
+        exp[57] = "<td style='background-color:green'>"
+        self.check_web(got, exp)
+        web.update_slave(gpio='1', send='flip')
+        got = web.html
+        exp[20] = "<td style='background-color:green'>"
+        self.check_web(got, exp)
+        web.update_slave(gpio='1', send='flip')
+        got = web.html
+        exp[20] = "<td style='background-color:red'>"
+        self.check_web(got, exp)
 
 
 
