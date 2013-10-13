@@ -5,7 +5,7 @@ from ConfigParser import ConfigParser
 import sys
 from pprint import pprint
 from raspi.ctrl import GpioCtrl
-from raspi.pin import get_mode_id
+from raspi.pin import get_mode_id, MainPin, SlavePin
 
 import re
 import cherrypy
@@ -18,8 +18,11 @@ class Web(object):
     def __init__(self, opt):
         self.opt = opt
         self.gctrl = GpioCtrl(opt)
-        if not self.opt['--no-read']:
+        if self.opt['--test'] != "None":
+            self.gctrl.run_scenario()
+        elif not self.opt['--no-read']:
             self.gctrl.read_cfg()
+
         self.gpio_pins = self.gctrl.gpio_pins
         self.form = {}
         self.html = []
@@ -34,8 +37,8 @@ class Web(object):
         """
         Global function to create row for pin
         """
-        pin_json = self.gpio_pins[gpio].get_json()
-        if 'main' in pin_json['groups'].split(","):
+        pin = self.gpio_pins[gpio]
+        if isinstance(pin, MainPin):
             self.create_row_main(gpio)
         else:
             self.create_row_slave(gpio)
@@ -48,7 +51,7 @@ class Web(object):
         pin_json['pinid'] = gpio
         self.html.extend([
             "<tr>",
-            '<form method="POST">',
+            '<form method="POST" action="update_main">',
             "<td><b>%(pin_nr)s</b></td>" % pin_json,
             "<td><b>%(name)s</b></td>" % pin_json,
             '<td>group</td>',  #group
@@ -60,13 +63,13 @@ class Web(object):
             state_col = 'green'
         self.html.append("<td style='background-color:%s'>" % state_col)
         self.html.append("<input name='send' type='submit' value='flip'></td>")
-        if pin_json['state'] == "0":
+        if pin_json['mode'] == "off":
             state_col = 'red'
         else:
             state_col = 'green'
         self.html.append("<td style='background-color:%s'>" % state_col)
         html_line = "<input name='send' type='submit' value='OFF'>"
-        html_line += "<input name='send' type='submit' value='ON'></td>"
+        html_line += "<input name='send' type='submit' value='AUTO'></td>"
         self.html.extend([
             html_line,
             '<td></td>',  #prio
@@ -89,7 +92,7 @@ class Web(object):
         pin_json = self.gpio_pins[gpio].get_json()
         pin_json['pinid'] = gpio
         self.html.extend(["<tr>",
-            '<form method="POST">',
+            '<form method="POST" action="update_slave">',
             "<td><b>%(pin_nr)s</b></td>" % pin_json,
             "<td><b>%(name)s</b></td>" % pin_json,
             ])
@@ -155,16 +158,55 @@ class Web(object):
         for gpio in self.gpio_pins.keys():
             self.create_row(gpio)
 
+    def flip_main(self, gpio):
+        """
+        flips main
+        """
+        pin = self.gctrl.get_pin(gpio)
+        pre =  pin.state
+        pin.deb("flip_main, current state: %s" % pre)
+        if pin.ismode('auto'):
+            pin.change_mode('off')
+        if pin.isstate(1):
+            self.gctrl.shutdown_slaves()
+        else:
+            self.gctrl.trigger_pins()
+        pin.flip()
+        pin.deb("pin flipped, current state: %s" % pin.state)
+        assert pre != pin.state
+
+    def change_main(self, gpio, send, groups):
+        """
+        change main pin
+        """
+        pin = self.gctrl.get_pin(gpio)
+        if send == "change":
+            pin.set_cfg({'groups': groups})
+        elif send == "AUTO":
+            pin.change_mode('auto')
+        elif send == "OFF":
+            pin.change_mode('off')
+
+
     @cherrypy.expose
-    def index(self, gpio=None, start=None, dow_Wed=None, dow_Sun=None, prio=None,
-              dow_Sat=None, dow_Tue=None, sun_delay=None, dow_Mon=None, groups=None,
-              send=None, duration=None, dow_Thu=None, dow_Fri=None, mode=None):
+    def update_main(self, gpio=None, groups=None, send=None, mode=None):
         """
         Creates the list of gpio pins and handles changes
         """
-        self.html = []
-        if gpio is not None:
-            self.form = {
+        if send == "flip":
+            self.flip_main(gpio)
+        else:
+            self.change_main(gpio,send, groups)
+        return self.create_index()
+
+    @cherrypy.expose
+    def update_slave(self, gpio=None, start=None, dow_Wed=None, dow_Sun=None, prio=None,
+                     dow_Sat=None, dow_Tue=None, sun_delay=None, dow_Mon=None, groups=None,
+                     send=None, duration=None, dow_Thu=None, dow_Fri=None, mode=None):
+        """
+        update slave pin
+        """
+        self.form = {
             'gpio': gpio,
             'start': start,
             'prio': prio,
@@ -177,13 +219,39 @@ class Web(object):
                 'fri': dow_Fri,
                 'sat': dow_Sat,
                 'sun': dow_Sun,
-            },
+                },
             'sun_delay': sun_delay,
             'send': send,
             'duration': duration,
             'mode': mode,
-        }
-            self.change()
+            }
+        self.change()
+        return self.create_index()
+
+    def flip_slave(self, gpio):
+        """
+        checks if slave could be fliped
+        """
+        pin = self.gctrl.get_pin(gpio)
+        if pin.isstate(1):
+            # switch off is possible at all times
+            pin.flip()
+        elif self.gctrl.check_main(pin.get_groups()):
+            pin.flip()
+
+
+    @cherrypy.expose
+    def index(self):
+        """
+        creates table
+        """
+        return self.create_index()
+
+    def create_index(self):
+        """
+        create table
+        """
+        self.html = []
         self.html.extend([
             "<html><head>",
             "<title>web.py</title>"
@@ -215,8 +283,8 @@ class Web(object):
         elif self.form['send'] == "OFF":
             self.gctrl.gpio_pins[self.form['gpio']].change_mode('off')
             self.gctrl.gpio_pins[self.form['gpio']].write_cfg()
-        elif self.form['send'] == "ON":
-            self.gctrl.gpio_pins[self.form['gpio']].change_mode('on')
+        elif self.form['send'] == "AUTO":
+            self.gctrl.gpio_pins[self.form['gpio']].change_mode('auto')
             self.gctrl.gpio_pins[self.form['gpio']].write_cfg()
         elif self.form['send'] == "change":
             if self.form['mode'] == "sun":

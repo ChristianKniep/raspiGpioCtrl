@@ -10,7 +10,8 @@ Options:
   -p <web_port>  Webserver port [default: 8888]
   --dry-run      dry run on !raspi creating gpio-path in `pwd`
   --no-read      Do not read cfg files within etc/...
-  -r=<root>      Root dir for config, lock-files, etc (def:/)
+  -r=<root>      Root dir for config, lock-files, etc [default:/]
+  --test=<scen>  Run test-scenario [default: None]
 """
 
 # Bibliotheken laden
@@ -40,16 +41,12 @@ def main():
     options =  docopt(__doc__, version='0.1')
     if options['--dry-run']:
         print "dry-run!"
-    #    srv = GpioCtrl(options)
-    #    srv.run_cronjob()
-    #if options.get("run_webserver"):
-    print options
     cherrypy.config.update(
         {
 	'server.socket_port': int(options['-p']) ,
 	} 
         )
-    cherrypy.server.socket_host = '192.168.2.204'
+    cherrypy.server.socket_host = 'localhost'
     cherrypy.quickstart(Web(options))
 
 

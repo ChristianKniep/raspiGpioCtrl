@@ -69,7 +69,9 @@ class BasePin(object):
         Print debug message
         """
         if self.opt['-d'] >= dlevel:
-            print "%s >> %s" % (dlevel, msg)
+            now = datetime.datetime.now()
+            now_str = now.strftime("%H:%M:%S.%f")
+            print "%s %s >> pin%s >> %s" % (dlevel, now_str, self.pin_nr, msg)
 
     def init_pin(self, force_init=False):
         """
@@ -87,6 +89,7 @@ class BasePin(object):
                 os.system("mkdir -p %s" % pfad)
                 self.set_pin(0)
         else:
+            self.deb("pin present, read_real_life")
             self.set_real_life()
 
     def set_real_life(self):
@@ -96,8 +99,9 @@ class BasePin(object):
         rl_val = self.read_real_life()
         if self.state != rl_val:
             self.state = rl_val
-            print "PinNR %s: Overwrite pin_state with RL (%s)" % \
-                  (self.pin_nr, rl_val)
+            msg = "PinNR %s: " % self.pin_nr
+            msg += "Overwrite pin_state with RL (%s)" % rl_val
+            self.deb(msg)
 
     def read_cfg(self):
         """
@@ -139,6 +143,7 @@ class BasePin(object):
             self.deb(self.cfg_file)
             # if the file exists we get the md5
             crypt = self.get_md5()
+            print crypt
             self.deb(crypt)
             if self.crypt != crypt:
                 raise IOError("cfg file changed on disk!")
@@ -168,6 +173,7 @@ class BasePin(object):
         returns True if file exists
         """
         pfad = "%s/value" % (self.pin_base)
+        self.deb(pfad)
         return os.path.exists(pfad)
 
     def set_pin(self, val):
@@ -176,8 +182,10 @@ class BasePin(object):
         """
         pfad = "%s/value" % (self.pin_base)
         cmd = "echo %s > %s" % (val, pfad)
+        self.deb(cmd)
         err = os.system(cmd)
         self.state = str(val)
+        self.deb("state:%s" % self.state)
 
     def isstate(self, state):
         """
@@ -191,6 +199,14 @@ class BasePin(object):
         """
         return self.mode == mode
 
+    def flip(self):
+        """
+        changes the value of the pin
+        """
+        if self.state == "0":
+            self.set_pin(1)
+        else:
+            self.set_pin(0)
 
 
 class SlavePin(BasePin):
@@ -334,15 +350,6 @@ class SlavePin(BasePin):
         }
         return res
 
-    def flip(self):
-        """
-        changes the value of the pin
-        """
-        if self.state == "0":
-            self.set_pin(1)
-        else:
-            self.set_pin(0)
-
     def get_dt_on(self):
         """
         returns a datetime instance with the date to switch on
@@ -407,7 +414,6 @@ class MainPin(BasePin):
         super(MainPin, self).__init__(opt, cfg_file)
         self.mode = "off"
 
-
     def get_json(self):
         """
         return json
@@ -429,14 +435,14 @@ class MainPin(BasePin):
         """
         if self.mode == "off" and self.state == "0":
             return False
-        elif self.mode == "ON":
+        elif self.mode == "auto":
             return True
 
     def change_mode(self, mode_str):
         """
         change mode
         """
-        if mode_str in ("on", "off"):
+        if mode_str in ("auto", "off"):
             self.mode = mode_str
         else:
             raise ValueError("%s is no valid mode" % mode_str)
@@ -452,14 +458,4 @@ class MainPin(BasePin):
             if key == "pin_nr":
                 self.pin_base = "%s/gpio%s" % (self.gpio_base, self.pin_nr)
                 self.init_pin()
-
-    def flip(self):
-        """
-        changes the value of the pin
-        """
-        # could only be switch if not in auto-mode
-        if self.state == "0" and self.mode == "off":
-            self.set_pin(1)
-        else:
-            self.set_pin(0)
 
