@@ -1,10 +1,9 @@
 import unittest
 import os
-import argparse
 import datetime
 from ConfigParser import ConfigParser
 from raspi.pin import SlavePin, MainPin, PIN_MODES, get_mode_id
-from raspi import PinError
+from pprint import pprint
 
 PREFIX = os.environ.get("WORKSPACE", "./")
 if not PREFIX.endswith("/"):
@@ -243,11 +242,13 @@ class TestRaspiPin(unittest.TestCase):
         filed = open("%s/gpio5/value" % gpio_sys, "r")
         cont = filed.read().strip()
         self.assertTrue(cont == "0", cont)
-        pin.change_mode('on')
+        pin.change_mode('auto')
         pin.flip()
         filed = open("%s/gpio5/value" % gpio_sys, "r")
         cont = filed.read().strip()
-        self.assertTrue(cont == "0", cont)
+        self.assertTrue(cont == "1", cont)
+        pprint(pin.get_json())
+        self.assertTrue(pin.ismode('off'))
 
     def test3_1_pin(self):
         """
@@ -304,6 +305,30 @@ class TestRaspiPin(unittest.TestCase):
         cont = filed.read().strip()
         filed.close()
         self.assertTrue(cont == "0", cont)
+
+    def test3_4_flip(self):
+        """
+        Pin >3_4> init dry-run pin and flip twice with main-pin
+        """
+        test1_file = "%s/packaged/etc/raspigpioctrl/pin1.cfg" % PREFIX
+        pin1 = SlavePin(self.opt, test1_file)
+        test5_file = "%s/packaged/etc/raspigpioctrl/main5.cfg" % PREFIX
+        pin5 = MainPin(self.opt, test5_file)
+        gpio_sys = "%s/packaged/sys/class/gpio/" % PREFIX
+        if os.path.exists("%s/packaged/sys" % PREFIX):
+            print os.system("rm -rf %s/packaged/sys" % PREFIX)
+            pin1.deb("'%s' removed")
+            self.assertFalse(os.path.exists(gpio_sys), "")
+        pin1.init_pin()
+        pin5.init_pin()
+        pin1.set_pin(0)
+        pin5.set_pin(0)
+        pin5.change_mode('auto')
+        pin1.flip()
+        filed = open("%s/gpio1/value" % gpio_sys, "r")
+        cont = filed.read().strip()
+        filed.close()
+        self.assertTrue(cont == "1", cont)
 
     def test4_0_datetime(self):
         """

@@ -89,7 +89,6 @@ class BasePin(object):
                 os.system("mkdir -p %s" % pfad)
                 self.set_pin(0)
         else:
-            self.deb("pin present, read_real_life")
             self.set_real_life()
 
     def set_real_life(self):
@@ -140,11 +139,8 @@ class BasePin(object):
             self.cfg_file = cfg_file
 
         if os.path.exists(self.cfg_file):
-            self.deb(self.cfg_file)
             # if the file exists we get the md5
             crypt = self.get_md5()
-            print crypt
-            self.deb(crypt)
             if self.crypt != crypt:
                 raise IOError("cfg file changed on disk!")
 
@@ -173,7 +169,6 @@ class BasePin(object):
         returns True if file exists
         """
         pfad = "%s/value" % (self.pin_base)
-        self.deb(pfad)
         return os.path.exists(pfad)
 
     def set_pin(self, val):
@@ -182,10 +177,8 @@ class BasePin(object):
         """
         pfad = "%s/value" % (self.pin_base)
         cmd = "echo %s > %s" % (val, pfad)
-        self.deb(cmd)
-        err = os.system(cmd)
+        os.system(cmd)
         self.state = str(val)
-        self.deb("state:%s" % self.state)
 
     def isstate(self, state):
         """
@@ -204,6 +197,8 @@ class BasePin(object):
         changes the value of the pin
         """
         if self.state == "0":
+            if isinstance(self, MainPin):
+                self.change_mode('off')
             self.set_pin(1)
         else:
             self.set_pin(0)
@@ -433,9 +428,9 @@ class MainPin(BasePin):
         > if mode==off and state==0: user did not want to rain at all
         > elif mode==on: could be fliped on
         """
-        if self.mode == "off" and self.state == "0":
+        if self.ismode("off") and self.isstate(0):
             return False
-        elif self.mode == "auto":
+        else:
             return True
 
     def change_mode(self, mode_str):

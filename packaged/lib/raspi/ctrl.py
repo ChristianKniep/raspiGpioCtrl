@@ -5,6 +5,7 @@ from ConfigParser import ConfigParser
 from raspi.pin import MainPin, SlavePin, get_mode_id
 from raspi import PREFIX
 import os
+import time
 from pprint import pprint
 
 
@@ -158,6 +159,30 @@ class GpioCtrl(object):
                 continue
             pin.set_pin(0)
 
+    def fire_main(self):
+        """
+        iterate over main pins and fire them up
+        """
+
+        for pin in self.gpio_pins.values():
+            if isinstance(pin, MainPin):
+                pin.set_pin(1)
+
+    def shutdown_main(self):
+        """
+        iterate over main pins and shut them down
+        """
+        for pin in self.gpio_pins.values():
+            if isinstance(pin, SlavePin):
+                if pin.isstate(1):
+                    pin.deb("I am still up! abort shut down main")
+                    break
+        else:
+            for pin in self.gpio_pins.values():
+                if isinstance(pin, MainPin):
+                    pin.deb("I am shut down now")
+                    pin.set_pin(0)
+
     def trigger_pins(self, dt=None):
         """
         iterate over pins.
@@ -181,7 +206,8 @@ class GpioCtrl(object):
         for pin in self.gpio_pins.values():
             if isinstance(pin, SlavePin):
                 continue
-            if len(grp_set.intersection(pin.get_groups())) > 0:
+            pin_grp = pin.get_groups().split(",")
+            if len(grp_set.intersection(pin_grp)) > 0:
                 if not pin.check():
                     return False
         return True

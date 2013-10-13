@@ -77,7 +77,7 @@ class TestRaspiWeb(unittest.TestCase):
             '<form method="POST" action="update_main">',
             "<td><b>5</b></td>",
             "<td><b>Mainrelay</b></td>",
-            "<td>group</td>",
+            "<td><input type='text' name='groups' value='garden' size='10'></td>",
             "<input type='hidden' name='gpio' value='5'>",
             "<td style='background-color:red'>",
             "<input name='send' type='submit' value='flip'></td>",
@@ -268,6 +268,7 @@ class TestRaspiWeb(unittest.TestCase):
         exp[40] = "<input type='checkbox' name='dow_Fri' value='Fri' checked>Fri"
         exp[44] = "<td><input type='text' name='duration' value='60' size='5'>min</td>"
         exp[52] = "<td><b>MainPin5</b></td>"
+        exp[53] = "<td><input type='text' name='groups' value='grpA' size='10'></td>"
         exp[55] = "<td style='background-color:red'>"
         exp[57] = "<td style='background-color:red'>"
         self.check_web(got, exp)
@@ -275,7 +276,7 @@ class TestRaspiWeb(unittest.TestCase):
         web.update_slave(gpio='1', send='flip')
         got = web.html
         self.check_web(got, exp)
-        # flip state=on
+        # flip state=1
         web.update_main(gpio='5', send='flip')
         got = web.html
         exp[55] = "<td style='background-color:green'>"
@@ -298,10 +299,12 @@ class TestRaspiWeb(unittest.TestCase):
         web.update_slave(gpio='1', send='flip')
         got = web.html
         exp[20] = "<td style='background-color:green'>"
+        exp[55] = "<td style='background-color:green'>"
         self.check_web(got, exp)
         web.update_slave(gpio='1', send='flip')
         got = web.html
         exp[20] = "<td style='background-color:red'>"
+        exp[55] = "<td style='background-color:red'>"
         self.check_web(got, exp)
 
 

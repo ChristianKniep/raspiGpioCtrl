@@ -54,8 +54,10 @@ class Web(object):
             '<form method="POST" action="update_main">',
             "<td><b>%(pin_nr)s</b></td>" % pin_json,
             "<td><b>%(name)s</b></td>" % pin_json,
-            '<td>group</td>',  #group
         ])
+        html_line = "<td><input type='text' name='groups' "
+        html_line += "value='%(groups)s' size='10'></td>" % pin_json
+        self.html.append(html_line)
         self.html.append("<input type='hidden' name='gpio' value='%s'>" % gpio)
         if pin_json['state'] == "0":
             state_col = 'red'
@@ -164,7 +166,6 @@ class Web(object):
         """
         pin = self.gctrl.get_pin(gpio)
         pre =  pin.state
-        pin.deb("flip_main, current state: %s" % pre)
         if pin.ismode('auto'):
             pin.change_mode('off')
         if pin.isstate(1):
@@ -172,7 +173,6 @@ class Web(object):
         else:
             self.gctrl.trigger_pins()
         pin.flip()
-        pin.deb("pin flipped, current state: %s" % pin.state)
         assert pre != pin.state
 
     def change_main(self, gpio, send, groups):
@@ -186,7 +186,6 @@ class Web(object):
             pin.change_mode('auto')
         elif send == "OFF":
             pin.change_mode('off')
-
 
     @cherrypy.expose
     def update_main(self, gpio=None, groups=None, send=None, mode=None):
@@ -236,9 +235,11 @@ class Web(object):
         if pin.isstate(1):
             # switch off is possible at all times
             pin.flip()
-        elif self.gctrl.check_main(pin.get_groups()):
-            pin.flip()
-
+            self.gctrl.shutdown_main()
+        else:
+            if self.gctrl.check_main(pin.get_groups()):
+                self.gctrl.fire_main()
+                pin.flip()
 
     @cherrypy.expose
     def index(self):
@@ -279,7 +280,7 @@ class Web(object):
         Triggered if Web-GUI wants to change a pin
         """
         if self.form['send'] == "flip":
-            self.gctrl.flip(self.form['gpio'])
+            self.flip_slave(self.form['gpio'])
         elif self.form['send'] == "OFF":
             self.gctrl.gpio_pins[self.form['gpio']].change_mode('off')
             self.gctrl.gpio_pins[self.form['gpio']].write_cfg()
