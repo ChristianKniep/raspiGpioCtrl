@@ -237,8 +237,10 @@ class Web(object):
             pin.flip()
             self.gctrl.shutdown_main()
         else:
-            if self.gctrl.check_main(pin.get_groups()):
-                self.gctrl.fire_main()
+            main_check = self.gctrl.check_main(pin.get_groups())
+            grp_check = self.gctrl.check_slaves(pin.get_groups())
+            if main_check and grp_check:
+                self.gctrl.fire_main(pin.get_groups())
                 pin.flip()
 
     @cherrypy.expose

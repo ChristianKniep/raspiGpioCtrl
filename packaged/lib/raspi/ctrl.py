@@ -159,14 +159,16 @@ class GpioCtrl(object):
                 continue
             pin.set_pin(0)
 
-    def fire_main(self):
+    def fire_main(self, groups):
         """
         iterate over main pins and fire them up
         """
-
+        grp_set = set(groups.split(","))
         for pin in self.gpio_pins.values():
             if isinstance(pin, MainPin):
-                pin.set_pin(1)
+                pin_grp = pin.get_groups().split(",")
+                if len(grp_set.intersection(pin_grp)) > 0:
+                    pin.set_pin(1)
 
     def shutdown_main(self):
         """
@@ -209,5 +211,19 @@ class GpioCtrl(object):
             pin_grp = pin.get_groups().split(",")
             if len(grp_set.intersection(pin_grp)) > 0:
                 if not pin.check():
+                    return False
+        return True
+
+    def check_slaves(self, groups):
+        """
+        returns True if no other slave from group is switched on
+        """
+        grp_set = set(groups.split(","))
+        for pin in self.gpio_pins.values():
+            if isinstance(pin, MainPin):
+                continue
+            pin_grp = pin.get_groups().split(",")
+            if len(grp_set.intersection(pin_grp)) > 0:
+                if pin.isstate(1):
                     return False
         return True
