@@ -293,6 +293,7 @@ class Web(object):
             if self.form['mode'] == "sun":
                 self.gctrl.gpio_pins[self.form['gpio']].change_mode('sun')
             elif self.form['mode'] == "time":
+                self.gctrl.gpio_pins[self.form['gpio']].change_mode('time')
                 dow = []
                 for key,val in self.form['dow'].items():
                     if val is not None:
