@@ -79,9 +79,13 @@ class BasePin(object):
         """
         pin_name = "gpio%s" % self.pin_nr
         if not self.pin_val_exists() or force_init:
+            print "PIN%s does not exists..." % self.pin_nr 
             if not self.opt['--dry-run']:
-                pfad = "%s/%s" % (self.gpio_base, pin_name)
-                os.system("echo %s > %s" % (self.pin_nr, pfad))
+                if not os.path.exists(self.pin_base):
+                    pfad = "%s/export" % (self.gpio_base)
+                    os.system("echo %s > %s" % (self.pin_nr, pfad))
+                    
+                pfad = "%s/%s/direction" % (self.gpio_base, pin_name)
                 os.system("echo out > %s" % (pfad))
                 self.set_pin(0)
             else:
@@ -212,12 +216,12 @@ class SlavePin(BasePin):
         """
         create object from cfg_file or empty one
         """
-        super(SlavePin, self).__init__(opt, cfg_file)
-        self.prio = '0'
         self.start = '00:00'
+        self.prio = '0'
         self.duration = '0'
         self.sun_delay = '0'
         self.dow = 'Mon,Tue,Wed,Thu,Fr,Sat,Sun'
+        super(SlavePin, self).__init__(opt, cfg_file)
 
     def __eq__(self, other):
         """
@@ -406,8 +410,8 @@ class MainPin(BasePin):
         """
         init main pin
         """
-        super(MainPin, self).__init__(opt, cfg_file)
         self.mode = "off"
+        super(MainPin, self).__init__(opt, cfg_file)
 
     def get_json(self):
         """

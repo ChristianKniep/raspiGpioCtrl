@@ -21,6 +21,13 @@ class GpioCtrl(object):
         self.gpio_cfg_path = "%s/etc/raspigpioctrl/" % opt['-r']
         self.gpio_pins = {}
 
+    def run_cron(self):
+        """
+        checks the pins one time and exit
+        """
+        self.read_cfg()
+        self.trigger_pins()
+    
     def add_pin(self, pin):
         """
         add pin to ctrl instance
@@ -72,7 +79,7 @@ class GpioCtrl(object):
         """
         return self.gpio_pins[str(pin_id)]
 
-    def read_cfg(self, force_init=True):
+    def read_cfg(self, force_init=False):
         """
         read cfg file and update gpio_pins dict
         """
@@ -84,7 +91,7 @@ class GpioCtrl(object):
                 else:
                     pin = SlavePin(self.opt, "%s/%s" % (root, file_path))
                 pin.init_pin(force_init)
-                self.gpio_pins[pin.get_id()] = pin
+                self.add_pin(pin)
 
     def flip(self, flip_pin_id):
         """

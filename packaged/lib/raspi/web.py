@@ -186,6 +186,7 @@ class Web(object):
             pin.change_mode('auto')
         elif send == "OFF":
             pin.change_mode('off')
+        pin.write_cfg()
 
     @cherrypy.expose
     def update_main(self, gpio=None, groups=None, send=None, mode=None):
@@ -276,19 +277,13 @@ class Web(object):
         self.html.append("</table>")
         self.html.append("</body></html>")
         return "\n".join(self.html)
-
+    
     def change(self):
         """
         Triggered if Web-GUI wants to change a pin
         """
         if self.form['send'] == "flip":
             self.flip_slave(self.form['gpio'])
-        elif self.form['send'] == "OFF":
-            self.gctrl.gpio_pins[self.form['gpio']].change_mode('off')
-            self.gctrl.gpio_pins[self.form['gpio']].write_cfg()
-        elif self.form['send'] == "AUTO":
-            self.gctrl.gpio_pins[self.form['gpio']].change_mode('auto')
-            self.gctrl.gpio_pins[self.form['gpio']].write_cfg()
         elif self.form['send'] == "change":
             if self.form['mode'] == "sun":
                 self.gctrl.gpio_pins[self.form['gpio']].change_mode('sun')
