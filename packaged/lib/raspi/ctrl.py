@@ -7,7 +7,7 @@ from raspi import PREFIX
 import os
 import time
 from pprint import pprint
-
+import datetime
 
 class GpioCtrl(object):
     """
@@ -27,7 +27,28 @@ class GpioCtrl(object):
         """
         self.read_cfg()
         self.trigger_pins()
+        self.check_test_stop()
     
+    def check_test_stop(self):
+        """
+        checks wether its time to stop the test
+        """
+        test_ongoing = {}
+        now = datetime.datetime.now()
+        for pin in self.gpio_pins.values():
+            for grp in pin.get_groups().split(","):
+                if grp not in test_ongoing:
+                    test_ongoing[grp] = False
+                if isinstance(pin, SlavePin):
+                    if now < pin.get_dt_off():
+                        test_ongoing[grp] |= True
+        for pin in self.gpio_pins.values():
+            if isinstance(pin, MainPin):
+                # TODO: If one Main is part of two groups we got a problem
+                for grp in pin.get_groups().split(","):
+                    if not test_ongoing[grp]:
+                        self.stop_test(pin)
+
     def add_pin(self, pin):
         """
         add pin to ctrl instance
@@ -73,6 +94,47 @@ class GpioCtrl(object):
         """
         for pin_id, pin in self.gpio_pins.items():
             print pin_id
+
+    def start_test(self, main_pin):
+        """
+        Starts a testrun for group of given MainPin
+        """
+        assert isinstance(main_pin, MainPin)
+        main_json = main_pin.get_json()
+        now = datetime.datetime.now()
+        offset = datetime.timedelta(0, minutes=int(main_json['test_dur']))
+        tstart = now + offset
+        cfg = {
+            'test_state': '1',
+            'test_start': tstart.strftime("%H:%M"),
+            'test_dur': main_json['test_dur'],
+        }
+        for pin in self.gpio_pins.values():
+            if main_pin.is_group_buddy(pin):
+                print "cfg: ", cfg
+                pin.set_cfg(cfg)
+                pin.write_cfg()
+        self.arrange_pins()
+    
+    def read_real_life(self):
+        """
+        read real life and update status
+        """
+        for pin in self.gpio_pins.values():
+            pin.set_real_life()
+
+    def stop_test(self, main_pin):
+        """
+        Starts a testrun for group of given MainPin
+        """
+        assert isinstance(main_pin, MainPin)
+        cfg = {
+            'test_state': '0',
+        }
+        for pin in self.gpio_pins.values():
+            if main_pin.is_group_buddy(pin):
+                pin.set_cfg(cfg)
+                pin.write_cfg()
 
     def get_pin(self, pin_id):
         """
@@ -153,9 +215,14 @@ class GpioCtrl(object):
             lst.sort()
             for item in lst:
                 # check times and change if neccessary
+                pin_json = item.get_json()
                 if (end is not None) and (end > item.get_dt_on()):
                     # we have to set a new start and adjust the end
-                    item.set_cfg({'start': end.strftime("%H:%M")})
+                    if pin_json['test_state'] == '0':
+                        item.set_cfg({'start': end.strftime("%H:%M")})
+                    else:
+                        item.set_cfg({'test_start': end.strftime("%H:%M")})
+                    item.write_cfg()
                 end = item.get_dt_off()
 
     def shutdown_slaves(self):
@@ -201,13 +268,31 @@ class GpioCtrl(object):
             if isinstance(pin, MainPin):
                 continue
             #-> first turn off
-            pin.trigger_off(dt)
+            if pin.trigger_off(dt):
+                self.flip_slave(pin.pin_nr)
         for pin in self.gpio_pins.values():
             if isinstance(pin, MainPin):
                 continue
             # -> after turn on (to avoid overlapping)
-            pin.trigger_on(dt)
+            if pin.trigger_on(dt):
+                self.flip_slave(pin.pin_nr)
 
+    def flip_slave(self, gpio):
+        """
+        checks if slave could be fliped
+        """
+        pin = self.get_pin(gpio)
+        if pin.isstate(1):
+            # switch off is possible at all times
+            pin.flip()
+            self.shutdown_main()
+        else:
+            main_check = self.check_main(pin.get_groups())
+            grp_check = self.check_slaves(pin.get_groups())
+            if main_check and grp_check:
+                self.fire_main(pin.get_groups())
+                pin.flip()
+    
     def check_main(self, groups):
         """
         returns True if slave flip could be done, False otherwise

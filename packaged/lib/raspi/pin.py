@@ -47,6 +47,8 @@ class BasePin(object):
         self.mode = 'off'
         self.groups = ''
         self.state = '0'
+        self.test_dur = '0'
+        self.test_state = '0'
         if cfg_file is not None:
             self.cfg_file = cfg_file
             self.read_cfg()
@@ -57,6 +59,14 @@ class BasePin(object):
         return identifier on which a sort should be done
         """
         return self.groups
+
+    def is_group_buddy(self, other):
+        """
+        if true if both pins have groups in common
+        """
+        my_grp_set = set(self.get_groups().split(","))
+        his_grp_lst = other.get_groups().split(",")
+        return len(my_grp_set.intersection(his_grp_lst)) > 0
 
     def get_id(self):
         """
@@ -105,6 +115,7 @@ class BasePin(object):
             msg = "PinNR %s: " % self.pin_nr
             msg += "Overwrite pin_state with RL (%s)" % rl_val
             self.deb(msg)
+            self.write_cfg()
 
     def read_cfg(self):
         """
@@ -216,6 +227,7 @@ class SlavePin(BasePin):
         """
         create object from cfg_file or empty one
         """
+        self.test_start = '00:00'
         self.start = '00:00'
         self.prio = '0'
         self.duration = '0'
@@ -311,8 +323,8 @@ class SlavePin(BasePin):
         """
         Alter the config, only a number of cfgs are changable
         """
-        w_able = ['pin_nr', 'prio', 'name', 'groups', 'start',
-                  'duration', 'sun_delay', 'dow']
+        w_able = ['pin_nr', 'test_state', 'test_start', 'test_dur', 'prio',
+                  'name', 'groups', 'start', 'duration', 'sun_delay', 'dow']
         for key, val in cfg_dic.items():
             if not force:
                 assert key in w_able, "%s not allowed to be set" % key
@@ -342,6 +354,9 @@ class SlavePin(BasePin):
             'mode': self.mode,
             'prio': self.prio,
             'start': self.start,
+            'test_state': self.test_state,
+            'test_start': self.test_start,
+            'test_dur': self.test_dur,
             'duration': self.duration,
             'sun_delay': self.sun_delay,
             'state': self.state,
@@ -354,7 +369,10 @@ class SlavePin(BasePin):
         """
         returns a datetime instance with the date to switch on
         """
-        (std, minute) = self.start.split(":")
+        if self.test_state == '1':
+            (std, minute) = self.test_start.split(":")
+        else:
+            (std, minute) = self.start.split(":")
         now = datetime.datetime.now()
         temp_on = datetime.datetime(year=now.year,
                                     month=now.month,
@@ -367,15 +385,20 @@ class SlavePin(BasePin):
         """
         returns a datetime instance with the date to switch on + duration
         """
-        (std, minute) = self.start.split(":")
+        if self.test_state == '1':
+            (std, minute) = self.test_start.split(":")
+        else:
+            (std, minute) = self.start.split(":")
         now = datetime.datetime.now()
         temp_on = datetime.datetime(year=now.year,
                                     month=now.month,
                                     day=now.day,
                                     hour=int(std),
                                     minute=int(minute))
-        offset = datetime.timedelta(0,
-                                    minutes=int(self.duration))
+        if self.test_state == '1':
+            offset = datetime.timedelta(0, minutes=int(self.test_dur))
+        else:
+            offset = datetime.timedelta(0, minutes=int(self.duration))
         return temp_on + offset
 
     def trigger_off(self, dt=None):
@@ -387,7 +410,8 @@ class SlavePin(BasePin):
         off = self.get_dt_off()
         if off <= dt and self.state == '1' \
            and self.mode not in ('manual'):
-            self.set_pin(0)
+            return True
+        return False
 
     def trigger_on(self, dt=None):
         """
@@ -399,7 +423,8 @@ class SlavePin(BasePin):
         off = self.get_dt_off()
         if on <= dt and off > dt and self.state == '0' \
            and self.mode not in (get_mode_id('manual'), get_mode_id('off')):
-            self.set_pin(1)
+            return True
+        return False
 
 
 class MainPin(BasePin):
@@ -412,6 +437,8 @@ class MainPin(BasePin):
         init main pin
         """
         self.mode = "off"
+        self.test_state = "0"
+        self.test_dur = "2"
         super(MainPin, self).__init__(opt, cfg_file)
 
     def get_json(self):
@@ -424,6 +451,8 @@ class MainPin(BasePin):
             'mode': self.mode,
             'state': self.state,
             'groups': self.groups,
+            'test_dur': self.test_dur,
+            'test_state': self.test_state,
             }
         return res
 
@@ -451,7 +480,8 @@ class MainPin(BasePin):
         """
         Alter the config, only a number of cfgs are changable
         """
-        w_able = ['pin_nr', 'name', 'groups', 'dow']
+        w_able = ['pin_nr', 'name', 'test_state', 'test_start',
+                  'test_dur', 'groups', 'dow']
         for key, val in cfg_dic.items():
             if not force:
                 assert key in w_able, "%s not allowed to be set" % key

@@ -24,8 +24,6 @@ class Web(object):
             self.gctrl.read_cfg()
 
         self.gpio_pins = self.gctrl.gpio_pins
-        for pin in self.gpio_pins.values():
-            print "PIN:%s CRYPT:%s" % (pin.pin_nr, pin.crypt)
         self.form = {}
         self.html = []
 
@@ -79,9 +77,16 @@ class Web(object):
             '<td></td>',  #prio
             '<td></td>',  # on
             '<td></td>',  # dow
-            '<td></td>',  # duration
-            '<td></td>',  # sun
             ])
+        html_line = "<td colspan='2'>Run "
+        html_line += "<input type='text' value='2' name='test_dur' size='2'>"
+        html_line += "min group test."
+        if pin_json['test_state'] == '0':
+            html_line += "<input name='send' type='submit' value='START TEST'>"
+        else:
+            html_line += "<input name='send' type='submit' value='STOP TEST'>"
+        html_line += "</td>"
+        self.html.append(html_line)
         html_line = "<td><input name='send' type='submit' value='change'></td>"
         self.html.extend([
             html_line,
@@ -109,7 +114,10 @@ class Web(object):
         else:
             state_col = 'green'
         self.html.append("<td style='background-color:%s'>" % state_col)
-        self.html.append("<input name='send' type='submit' value='flip'></td>")
+        if pin_json['test_state'] == '0':
+            self.html.append("<input name='send' type='submit' value='flip'></td>")
+        else:
+            self.html.append("TEST")
         self.html.append("<td>")
         for mode in ['time', 'sun', 'man']:
             if pin_json['mode'] == mode:
@@ -159,6 +167,8 @@ class Web(object):
     def create_tab(self):
         """ Creates table to show the different gpiopins
         """
+        self.gctrl.read_real_life()
+        self.gctrl.read_cfg()
         for gpio in self.gpio_pins.keys():
             self.create_row(gpio)
 
@@ -177,7 +187,7 @@ class Web(object):
         pin.flip()
         assert pre != pin.state
 
-    def change_main(self, gpio, send, groups):
+    def change_main(self, gpio, send, groups, test_dur):
         """
         change main pin
         """
@@ -188,17 +198,21 @@ class Web(object):
             pin.change_mode('auto')
         elif send == "OFF":
             pin.change_mode('off')
+        elif send == "START TEST":
+            self.gctrl.start_test(pin)
+        elif send == "STOP TEST":
+            self.gctrl.stop_test(pin)
         pin.write_cfg()
 
     @cherrypy.expose
-    def update_main(self, gpio=None, groups=None, send=None, mode=None):
+    def update_main(self, gpio=None, groups=None, send=None, mode=None, test_dur=None):
         """
         Creates the list of gpio pins and handles changes
         """
         if send == "flip":
             self.flip_main(gpio)
         else:
-            self.change_main(gpio,send, groups)
+            self.change_main(gpio,send, groups, test_dur)
         return self.create_index()
 
     @cherrypy.expose
@@ -234,17 +248,7 @@ class Web(object):
         """
         checks if slave could be fliped
         """
-        pin = self.gctrl.get_pin(gpio)
-        if pin.isstate(1):
-            # switch off is possible at all times
-            pin.flip()
-            self.gctrl.shutdown_main()
-        else:
-            main_check = self.gctrl.check_main(pin.get_groups())
-            grp_check = self.gctrl.check_slaves(pin.get_groups())
-            if main_check and grp_check:
-                self.gctrl.fire_main(pin.get_groups())
-                pin.flip()
+        self.gctrl.flip_slave(gpio)
 
     @cherrypy.expose
     def index(self):

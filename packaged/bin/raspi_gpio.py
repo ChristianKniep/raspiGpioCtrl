@@ -24,7 +24,11 @@ import sys
 from netifaces import ifaddresses as ifaddr
 #import datetime
 #import time
-from raspi.ctrl import GpioCtrl
+try:
+    from raspi.ctrl import GpioCtrl
+except ImportError:
+    sys.path.append("/root/raspiGpioCtrl/packaged/lib/")
+    from raspi.ctrl import GpioCtrl
 from raspi.web import Web
 from docopt import docopt
 try:
