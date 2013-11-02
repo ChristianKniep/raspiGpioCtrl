@@ -24,6 +24,8 @@ class Web(object):
             self.gctrl.read_cfg()
 
         self.gpio_pins = self.gctrl.gpio_pins
+        for pin in self.gpio_pins.values():
+            print "PIN:%s CRYPT:%s" % (pin.pin_nr, pin.crypt)
         self.form = {}
         self.html = []
 

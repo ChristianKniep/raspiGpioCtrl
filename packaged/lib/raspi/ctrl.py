@@ -58,8 +58,9 @@ class GpioCtrl(object):
                 'groups': 'grpA',
                 'name': 'MainPin5',
                 'pin_nr': '5',
+                'crypt': 'eaa491247883b9b1cd0760bae439a253'
                 }
-            pin5.set_cfg(cfg)
+            pin5.set_cfg(cfg, True)
             pin5.val_path = "%s/gpio%s/value" % (pin1.gpio_base, 5)
             pin5.cfg_file = "%s/packaged/etc/raspigpioctrl/main5.cfg" % (os.environ["WORKSPACE"])
             pin5.change_mode('off')

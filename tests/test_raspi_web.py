@@ -56,17 +56,17 @@ class TestRaspiWeb(unittest.TestCase):
             "<option value='4'>4</option>",
             '</select></td>',
             '</td>',
-            "<td><input type='text' name='start' value='00:00' size='5'>(24h)</td>",
+            "<td><input type='text' name='start' value='01:00' size='5'>(24h)</td>",
             '<td>',
-            "<input type='checkbox' name='dow_Mon' value='Mon' checked>Mon",
-            "<input type='checkbox' name='dow_Tue' value='Tue' checked>Tue",
+            "<input type='checkbox' name='dow_Mon' value='Mon'>Mon",
+            "<input type='checkbox' name='dow_Tue' value='Tue'>Tue",
             "<input type='checkbox' name='dow_Wed' value='Wed' checked>Wed",
-            "<input type='checkbox' name='dow_Thu' value='Thu' checked>Thu",
+            "<input type='checkbox' name='dow_Thu' value='Thu'>Thu",
             "<input type='checkbox' name='dow_Fri' value='Fri'>Fri",
-            "<input type='checkbox' name='dow_Sat' value='Sat' checked>Sat",
+            "<input type='checkbox' name='dow_Sat' value='Sat'>Sat",
             "<input type='checkbox' name='dow_Sun' value='Sun' checked>Sun",
             '</td>',
-            "<td><input type='text' name='duration' value='0' size='5'>min</td>",
+            "<td><input type='text' name='duration' value='60' size='5'>min</td>",
             "<td><input type='text' name='sun_delay' value='0' size='5'>min</td>",
             "<td><input name='send' type='submit' value='change'></td>",
             '</form>',
@@ -121,6 +121,7 @@ class TestRaspiWeb(unittest.TestCase):
         exp = ""
         
         test1_file = "%s/packaged/etc/raspigpioctrl/pin1.cfg" % PREFIX
+        print test1_file
         pin1 = SlavePin(self.opt, test1_file)
         pin1.init_pin(True)
         
@@ -169,7 +170,12 @@ class TestRaspiWeb(unittest.TestCase):
         exp.extend([line for line in self.exp_pin1])
         exp.extend([line for line in self.exp_tail])
         exp[20] = "<td style='background-color:red'>"
+        exp[36] = "<input type='checkbox' name='dow_Mon' value='Mon' checked>Mon"
+        exp[37] = "<input type='checkbox' name='dow_Tue' value='Tue' checked>Tue"
+        exp[39] = "<input type='checkbox' name='dow_Thu' value='Thu' checked>Thu"
         exp[40] = "<input type='checkbox' name='dow_Fri' value='Fri' checked>Fri"
+        exp[41] = "<input type='checkbox' name='dow_Sat' value='Sat' checked>Sat"
+        exp[42] = "<input type='checkbox' name='dow_Sun' value='Sun' checked>Sun"
         self.check_web(web.html, exp)
 
     def test0_3_flip(self):
@@ -187,8 +193,12 @@ class TestRaspiWeb(unittest.TestCase):
         exp = [line for line in self.exp_head]
         exp.extend([line for line in self.exp_pin1])
         exp.extend([line for line in self.exp_tail])
+        exp[36] = "<input type='checkbox' name='dow_Mon' value='Mon' checked>Mon"
+        exp[37] = "<input type='checkbox' name='dow_Tue' value='Tue' checked>Tue"
         exp[39] = "<input type='checkbox' name='dow_Thu' value='Thu'>Thu"
         exp[40] = "<input type='checkbox' name='dow_Fri' value='Fri' checked>Fri"
+        exp[41] = "<input type='checkbox' name='dow_Sat' value='Sat' checked>Sat"
+        exp[42] = "<input type='checkbox' name='dow_Sun' value='Sun' checked>Sun"
         self.check_web(web.html, exp)
         web.update_slave(send='flip', gpio='1')
         exp[20] = "<td style='background-color:red'>"
@@ -238,7 +248,13 @@ class TestRaspiWeb(unittest.TestCase):
         exp.extend([line for line in self.exp_main5])
         exp.extend([line for line in self.exp_tail])
         exp[20] = "<td style='background-color:red'>"
+        exp[36] = "<input type='checkbox' name='dow_Mon' value='Mon' checked>Mon"
+        exp[37] = "<input type='checkbox' name='dow_Tue' value='Tue' checked>Tue"
+        exp[39] = "<input type='checkbox' name='dow_Thu' value='Thu' checked>Thu"
         exp[40] = "<input type='checkbox' name='dow_Fri' value='Fri' checked>Fri"
+        exp[41] = "<input type='checkbox' name='dow_Sat' value='Sat' checked>Sat"
+        exp[42] = "<input type='checkbox' name='dow_Sun' value='Sun' checked>Sun"
+        exp[52] = '<td><b>MainPin5</b></td>'
         got = web.html
         self.check_web(got, exp)
         pin5.change_mode('auto')
@@ -265,7 +281,12 @@ class TestRaspiWeb(unittest.TestCase):
         exp[18] = "<td><input type='text' name='groups' value='grpA' size='10'></td>"
         exp[20] = "<td style='background-color:red'>"
         exp[34] = "<td><input type='text' name='start' value='01:00' size='5'>(24h)</td>"
+        exp[36] = "<input type='checkbox' name='dow_Mon' value='Mon' checked>Mon"
+        exp[37] = "<input type='checkbox' name='dow_Tue' value='Tue' checked>Tue"
+        exp[39] = "<input type='checkbox' name='dow_Thu' value='Thu' checked>Thu"
         exp[40] = "<input type='checkbox' name='dow_Fri' value='Fri' checked>Fri"
+        exp[41] = "<input type='checkbox' name='dow_Sat' value='Sat' checked>Sat"
+        exp[42] = "<input type='checkbox' name='dow_Sun' value='Sun' checked>Sun"
         exp[44] = "<td><input type='text' name='duration' value='60' size='5'>min</td>"
         exp[52] = "<td><b>MainPin5</b></td>"
         exp[53] = "<td><input type='text' name='groups' value='grpA' size='10'></td>"

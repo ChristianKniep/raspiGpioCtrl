@@ -146,7 +146,7 @@ class BasePin(object):
             # if the file exists we get the md5
             crypt = self.get_md5()
             if self.crypt != crypt:
-                raise IOError("cfg file changed on disk!")
+                raise IOError("cfg file changed on disk! (new: %s)" % crypt)
 
         cfg = ConfigParser()
         sec = 'global'
@@ -307,14 +307,15 @@ class SlavePin(BasePin):
         else:
             return False
 
-    def set_cfg(self, cfg_dic):
+    def set_cfg(self, cfg_dic, force=False):
         """
         Alter the config, only a number of cfgs are changable
         """
         w_able = ['pin_nr', 'prio', 'name', 'groups', 'start',
                   'duration', 'sun_delay', 'dow']
         for key, val in cfg_dic.items():
-            assert key in w_able, "%s not allowed to be set" % key
+            if not force:
+                assert key in w_able, "%s not allowed to be set" % key
             self.__dict__[key] = str(val)
             if key == "pin_nr":
                 self.pin_base = "%s/gpio%s" % (self.gpio_base, self.pin_nr)
@@ -446,13 +447,14 @@ class MainPin(BasePin):
         else:
             raise ValueError("%s is no valid mode" % mode_str)
 
-    def set_cfg(self, cfg_dic):
+    def set_cfg(self, cfg_dic, force=True):
         """
         Alter the config, only a number of cfgs are changable
         """
         w_able = ['pin_nr', 'name', 'groups', 'dow']
         for key, val in cfg_dic.items():
-            assert key in w_able, "%s not allowed to be set" % key
+            if not force:
+                assert key in w_able, "%s not allowed to be set" % key
             self.__dict__[key] = str(val)
             if key == "pin_nr":
                 self.pin_base = "%s/gpio%s" % (self.gpio_base, self.pin_nr)
