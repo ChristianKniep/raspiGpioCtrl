@@ -14,6 +14,7 @@ class TestRaspiPin(unittest.TestCase):
         self.opt = {
             "-r":"packaged",
             "--dry-run":True,
+            '--test':True,
             '-d':1,
         }
         self.pin0 = SlavePin(self.opt)
@@ -53,6 +54,9 @@ class TestRaspiPin(unittest.TestCase):
             'duration': '0',
             'sun_delay': '0',
             'state': '0',
+            'test_state': '0',
+            'test_start': '00:00',
+            'test_dur': '0',
             'dow': 'Mon,Tue,Wed,Thu,Fr,Sat,Sun',
             'gpio_base': "%spackaged/sys/class/gpio" % PREFIX,
             'pin_base': "%spackaged/sys/class/gpio/gpio0" % PREFIX,
@@ -68,7 +72,7 @@ class TestRaspiPin(unittest.TestCase):
         pin1.init_pin(True)
             
         exp_items = {
-            'crypt': '8c34222d580d60b98fe73a05eeca0d3d',
+            'crypt': 'af1c6ac30f584c8658ce3d35d77dec12',
             'pin_nr': '1',
             'cfg_file': test1_file,
             'name': 'Front',
@@ -80,6 +84,9 @@ class TestRaspiPin(unittest.TestCase):
             'sun_delay': '0',
             'state': '0',
             'dow': 'Wed,Sun',
+            'test_state': '0',
+            'test_start': '00:00',
+            'test_dur': '0',
             'gpio_base': "%spackaged/sys/class/gpio" % PREFIX,
             'pin_base': "%spackaged/sys/class/gpio/gpio1" % PREFIX,
         }
@@ -103,6 +110,9 @@ class TestRaspiPin(unittest.TestCase):
             'sun_delay': '0',
             'state': '0',
             'dow': 'Mon,Tue,Wed,Thu,Fr,Sat,Sun',
+            'test_state': '0',
+            'test_start': '00:00',
+            'test_dur': '0',
             'gpio_base': "%spackaged/sys/class/gpio" % PREFIX,
             'pin_base': "%spackaged/sys/class/gpio/gpio0" % PREFIX,
         }
@@ -143,6 +153,9 @@ class TestRaspiPin(unittest.TestCase):
                 'duration': '0',
                 'sun_delay': '0',
                 'state': '0',
+                'test_state': '0',
+                'test_start': '00:00',
+                'test_dur': '0',
                 'dow': 'Mon,Tue,Wed,Thu,Fr,Sat,Sun',
              }
         amsg = "EXP\n%s\n!=\nGOT\n%s\n" % (exp, json)
@@ -157,7 +170,7 @@ class TestRaspiPin(unittest.TestCase):
             os.remove(cfg_file)
         pin = SlavePin(self.opt)
         pin.write_cfg(cfg_file)
-        self.assertTrue(pin.crypt == '9ec78ec1ae354d5cd568a90ab2f1493a',
+        self.assertTrue(pin.crypt == '3cf7880036cd28b8d798574fd2e1b341',
                         "CRYPT: %s" % pin.crypt)
         os.remove(cfg_file)
 
@@ -174,7 +187,7 @@ class TestRaspiPin(unittest.TestCase):
         if os.path.exists(cfg_file):
             os.remove(cfg_file)
         pin.write_cfg(cfg_file)
-        self.assertTrue(pin.crypt == '80a913b6297d386cd72b9f9fd9172c34',
+        self.assertTrue(pin.crypt == 'afc4a799f1a3832c52235d7515333dcc',
                         "CRYPT: %s" % pin.crypt)
         os.remove(cfg_file)
 
@@ -194,7 +207,7 @@ class TestRaspiPin(unittest.TestCase):
         if os.path.exists(cfg_file):
             os.remove(cfg_file)
         pin.write_cfg(cfg_file)
-        self.assertTrue(pin.crypt == '80a913b6297d386cd72b9f9fd9172c34',
+        self.assertTrue(pin.crypt == 'afc4a799f1a3832c52235d7515333dcc',
                         "CRYPT: %s" % pin.crypt)
         
         cfg = {'start': "10:30"}
@@ -718,13 +731,16 @@ class TestRaspiPin(unittest.TestCase):
         pin.init_pin()
         pin.set_pin(1)
         self.assertTrue("1" == pin.read_real_life())
-        pin.trigger_off()
+        if pin.trigger_off():
+            pin.set_pin(0)
         self.assertTrue("0" == pin.read_real_life())
-        pin.trigger_off()
+        if pin.trigger_off():
+            pin.set_pin(0)
         self.assertTrue("0" == pin.read_real_life())
         pin.set_pin(1)
         self.assertTrue("1" == pin.read_real_life())
-        pin.trigger_off()
+        if pin.trigger_off():
+            pin.set_pin(0)
         self.assertTrue("0" == pin.read_real_life())
 
     def test8_1_trigger(self):
@@ -743,11 +759,13 @@ class TestRaspiPin(unittest.TestCase):
         pin.set_cfg(cfg)
         pin.change_mode('time')
         pin.init_pin()
-        pin.trigger_on()
+        if pin.trigger_on():
+            pin.set_pin(1)
         self.assertTrue("1" == pin.read_real_life())
         pin.set_pin(0)
         self.assertTrue("0" == pin.read_real_life())
-        pin.trigger_on()
+        if pin.trigger_on():
+            pin.set_pin(1)
         self.assertTrue("1" == pin.read_real_life())
 
 

@@ -147,6 +147,8 @@ class BasePin(object):
         """
         crypt = None
         if cfg_file is None:
+            if self.opt['--test']:
+                return
             amsg = "if no cfg_file is given, the instance should already have one"
             assert self.cfg_file is not None, amsg
             # if a cfg was given, it will be set as default file
