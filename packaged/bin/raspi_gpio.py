@@ -21,7 +21,6 @@ import re
 #import web
 from pprint import pprint
 import sys
-from netifaces import ifaddresses as ifaddr
 #import datetime
 #import time
 try:

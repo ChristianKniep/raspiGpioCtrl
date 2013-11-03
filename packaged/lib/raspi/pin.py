@@ -411,9 +411,11 @@ class SlavePin(BasePin):
         if dt is None:
             dt = datetime.datetime.now()
         off = self.get_dt_off()
-        if off <= dt and self.state == '1' \
-           and self.mode not in ('manual'):
-            return True
+        if off <= dt and self.state == '1':
+            if self.test_state == '1':
+                return True
+            if self.mode not in ('man'):
+            	return True
         return False
 
     def trigger_on(self, dt=None):
@@ -424,9 +426,11 @@ class SlavePin(BasePin):
             dt = datetime.datetime.now()
         on = self.get_dt_on()
         off = self.get_dt_off()
-        if on <= dt and off > dt and self.state == '0' \
-           and self.mode not in (get_mode_id('manual'), get_mode_id('off')):
-            return True
+        if on <= dt and off > dt and self.state == '0':
+            if self.test_state == '1':
+                return True
+            if self.mode not in (get_mode_id('man'), get_mode_id('off')):
+                return True
         return False
 
 
