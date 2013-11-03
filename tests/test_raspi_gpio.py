@@ -14,6 +14,7 @@ class TestRaspiGpio(unittest.TestCase):
         self.opt = {
             "-r":"packaged",
             "--dry-run":True,
+            '--test':False,
             "-d":'1',
         }
         self.skip_keys = ['opt']
