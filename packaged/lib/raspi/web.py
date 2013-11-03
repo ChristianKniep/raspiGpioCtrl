@@ -167,8 +167,9 @@ class Web(object):
     def create_tab(self):
         """ Creates table to show the different gpiopins
         """
-        self.gctrl.read_real_life()
-        self.gctrl.read_cfg()
+        if self.opt['--test'] is None:
+            self.gctrl.read_real_life()
+            self.gctrl.read_cfg()
         for gpio in self.gpio_pins.keys():
             self.create_row(gpio)
 
