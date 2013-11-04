@@ -1,0 +1,7 @@
+[global]
+groups = garden
+state = 0
+name = MainPin5
+pin_nr = 5
+mode = auto
+
