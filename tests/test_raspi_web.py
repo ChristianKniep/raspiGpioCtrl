@@ -4,6 +4,7 @@ from pprint import pprint
 from raspi.web import Web
 from raspi.pin import SlavePin, MainPin
 import cherrypy
+import shutil
 
 PREFIX = os.environ.get("WORKSPACE", "./")
 if not PREFIX.endswith("/"):
@@ -13,11 +14,11 @@ class TestRaspiWeb(unittest.TestCase):
 
     def setUp(self):
         self.opt = {
-            "-r":"packaged",
-            "--dry-run":True,
-            "--no-read":True,
-            "--test":'None',
-            '-d':1,
+            "-r": "packaged",
+            "--dry-run": True,
+            "--no-read": False,
+            "--test": 'None',
+            '-d': 1,
         }
         self.exp_head = [
             '<html><head>',
@@ -119,11 +120,13 @@ class TestRaspiWeb(unittest.TestCase):
         """
         exp = ""
         
-        test1_file = "%s/packaged/etc/raspigpioctrl/pin1.cfg" % PREFIX
-        pin1 = SlavePin(self.opt, test1_file)
+        opt = self.opt.copy()
+        opt['-c'] = "%s/tests/misc/test_raspi_web/test0/etc/raspigpioctrl/" % PREFIX
+        test1_file = "%s/pin1.cfg" % opt['-c']
+        pin1 = SlavePin(opt, test1_file)
         pin1.init_pin(True)
         
-        web = Web(self.opt)
+        web = Web(opt)
         web.add_pin(pin1)
         web.index()
         exp = [line for line in self.exp_head]
@@ -138,12 +141,14 @@ class TestRaspiWeb(unittest.TestCase):
         Web >0_1> show green status
         """
 
-        test1_file = "%s/packaged/etc/raspigpioctrl/pin1.cfg" % PREFIX
-        pin1 = SlavePin(self.opt, test1_file)
+        opt = self.opt.copy()
+        opt['-c'] = "%s/tests/misc/test_raspi_web/test0/etc/raspigpioctrl/" % PREFIX
+        test1_file = "%s/pin1.cfg" % opt['-c']
+        pin1 = SlavePin(opt, test1_file)
         pin1.init_pin(True)
         pin1.flip()
         
-        web = Web(self.opt)
+        web = Web(opt)
         web.add_pin(pin1)
         web.index()
         exp = [line for line in self.exp_head]
@@ -156,12 +161,14 @@ class TestRaspiWeb(unittest.TestCase):
         """
         Web >0_2> all dow checked
         """
-        test1_file = "%s/packaged/etc/raspigpioctrl/pin1.cfg" % PREFIX
-        pin1 = SlavePin(self.opt, test1_file)
+        opt = self.opt.copy()
+        opt['-c'] = "%s/tests/misc/test_raspi_web/test0/etc/raspigpioctrl/" % PREFIX
+        test1_file = "%s/pin1.cfg" % opt['-c']
+        pin1 = SlavePin(opt, test1_file)
         pin1.init_pin(True)
         pin1.set_cfg({'dow':'Mon,Tue,Wed,Thu,Fri,Sat,Sun'})
         
-        web = Web(self.opt)
+        web = Web(opt)
         web.add_pin(pin1)
         web.index()
         exp = [line for line in self.exp_head]
@@ -173,19 +180,22 @@ class TestRaspiWeb(unittest.TestCase):
         exp[39] = "<input type='checkbox' name='dow_Thu' value='Thu' checked>Thu"
         exp[40] = "<input type='checkbox' name='dow_Fri' value='Fri' checked>Fri"
         exp[41] = "<input type='checkbox' name='dow_Sat' value='Sat' checked>Sat"
-        exp[42] = "<input type='checkbox' name='dow_Sun' value='Sun' checked>Sun"
         self.check_web(web.html, exp)
+        shutil.copyfile("%s.orig" % test1_file, test1_file)
 
     def test0_3_flip(self):
         """
         Web >0_3> press flip button
         """
-        test1_file = "%s/packaged/etc/raspigpioctrl/pin1.cfg" % PREFIX
-        pin1 = SlavePin(self.opt, test1_file)
+        opt = self.opt.copy()
+        opt['-c'] = "%s/tests/misc/test_raspi_web/test0/etc/raspigpioctrl/" % PREFIX
+        opt['--no-read'] = True
+        test1_file = "%s/pin1.cfg" % opt['-c']
+        pin1 = SlavePin(opt, test1_file)
         pin1.init_pin(True)
         pin1.set_cfg({'dow':'Mon,Tue,Wed,Fri,Sat,Sun'})
-        
-        web = Web(self.opt)
+
+        web = Web(opt)
         web.add_pin(pin1)
         web.update_slave(send='flip', gpio='1')
         exp = [line for line in self.exp_head]
@@ -201,43 +211,52 @@ class TestRaspiWeb(unittest.TestCase):
         web.update_slave(send='flip', gpio='1')
         exp[20] = "<td style='background-color:red'>"
         self.check_web(web.html, exp)
+        shutil.copyfile("%s.orig" % test1_file, test1_file)
 
     def test0_4_sun(self):
         """
         Web >0_4> change mod to sun
         """
         exp = ""
-        
-        test1_file = "%s/packaged/etc/raspigpioctrl/pin1.cfg" % PREFIX
-        pin1 = SlavePin(self.opt, test1_file)
+
+        opt = self.opt.copy()
+        src = "%s/tests/misc/test_raspi_web/test0/etc/raspigpioctrl/" % PREFIX
+        opt['-c'] = "%s/tests/misc/test_raspi_web/test0/3/etc/raspigpioctrl/" % PREFIX
+        test1_src = "%s/pin1.cfg" % src
+        test1_file = "%s/pin1.cfg" % opt['-c']
+        pin1 = SlavePin(opt, test1_file)
         pin1.init_pin(True)
         pin1.set_cfg({'dow':'Mon,Tue,Wed,Thu,Fri,Sat,Sun'})
         
-        web = Web(self.opt)
+        web = Web(opt)
         web.add_pin(pin1)
         web.update_slave(send='change', mode='sun', gpio='1')
         self.assertTrue(web.gctrl.gpio_pins['1'].get_json()['mode'] == 'sun')
+        shutil.copyfile(test1_src, test1_file)
 
     def test1_0_main(self):
         """
         Web >1_0> main pin plus pin1
         """
-        pin1_file = "%s/packaged/etc/raspigpioctrl/pin1.cfg" % PREFIX
-        pin1 = SlavePin(self.opt, pin1_file)
+        opt = self.opt.copy()
+        opt['-c'] = "%s/tests/misc/test_raspi_web/test1/etc/raspigpioctrl/" % PREFIX
+        pin1_file = "%s/pin1.cfg" % opt['-c']
+        pin5_file = "%s/main5.cfg" % opt['-c']
+        shutil.copyfile("%s.orig" % pin1_file, pin1_file)
+        shutil.copyfile("%s.orig" % pin5_file, pin5_file)
+        pin1 = SlavePin(opt, pin1_file)
         pin1.init_pin(True)
         pin1.set_pin(0)
-        pin1.set_cfg({'dow':'Mon,Tue,Wed,Thu,Fri,Sat,Sun'})
+        pin1.set_cfg({'dow': 'Mon,Tue,Wed,Thu,Fri,Sat,Sun'})
         self.assertTrue(pin1.isstate(0))
-        pin5_file = "%s/packaged/etc/raspigpioctrl/main5.cfg" % PREFIX
-        pin5 = MainPin(self.opt, pin5_file)
+        pin5 = MainPin(opt, pin5_file)
         pin5.init_pin(True)
         pin5.set_cfg({'groups':'garden'})
-        pprint(pin5.get_json())
         pin5.change_mode('off')
         pin5.set_pin(0)
         self.assertTrue(pin5.isstate(0))
 
-        web = Web(self.opt)
+        web = Web(opt)
         web.add_pin(pin1)
         web.add_pin(pin5)
         web.index()
@@ -245,6 +264,7 @@ class TestRaspiWeb(unittest.TestCase):
         exp.extend([line for line in self.exp_pin1])
         exp.extend([line for line in self.exp_main5])
         exp.extend([line for line in self.exp_tail])
+        exp[17] = '<td><b>TestPin1</b></td>'
         exp[20] = "<td style='background-color:red'>"
         exp[36] = "<input type='checkbox' name='dow_Mon' value='Mon' checked>Mon"
         exp[37] = "<input type='checkbox' name='dow_Tue' value='Tue' checked>Tue"
@@ -261,6 +281,8 @@ class TestRaspiWeb(unittest.TestCase):
         exp[57] = "<td style='background-color:green'>"
         got = web.html
         self.check_web(got, exp)
+        shutil.copyfile("%s.orig" % pin1_file, pin1_file)
+        shutil.copyfile("%s.orig" % pin5_file, pin5_file)
 
     def test2_0_change(self):
         """
@@ -271,7 +293,12 @@ class TestRaspiWeb(unittest.TestCase):
         exp.extend([line for line in self.exp_main5])
         exp.extend([line for line in self.exp_tail])
         opt = self.opt.copy()
-        opt['--test'] = "test1"
+        opt['-c'] = "%s/tests/misc/test_raspi_web/test2/etc/raspigpioctrl/" % PREFIX
+        pin1_file = "%s/pin1.cfg" % opt['-c']
+        pin5_file = "%s/main5.cfg" % opt['-c']
+        shutil.copyfile("%s.orig" % pin1_file, pin1_file)
+        shutil.copyfile("%s.orig" % pin5_file, pin5_file)
+        opt['--no-read'] = False
         web = Web(opt)
         web.index()
         got = web.html
