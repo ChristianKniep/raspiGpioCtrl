@@ -12,6 +12,7 @@ Options:
   --dry-run      dry run on !raspi creating gpio-path in `pwd`
   --no-read      Do not read cfg files within etc/...
   -r=<root>      Root dir for config, lock-files, etc [default: /]
+  -c=<cfg_path>  Path to configuration files [default: /etc/raspigpioctrl/]
   --test=<scen>  Run test-scenario [default: None]
 """
 

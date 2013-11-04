@@ -72,7 +72,7 @@ class TestRaspiPin(unittest.TestCase):
         pin1.init_pin(True)
             
         exp_items = {
-            'crypt': 'af1c6ac30f584c8658ce3d35d77dec12',
+            'crypt': '8c34222d580d60b98fe73a05eeca0d3d',
             'pin_nr': '1',
             'cfg_file': test1_file,
             'name': 'Front',

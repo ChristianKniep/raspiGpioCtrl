@@ -21,9 +21,11 @@ class Web(object):
         if self.opt['--test'] != "None":
             self.gctrl.run_scenario()
         elif not self.opt['--no-read']:
+            print "read cfg"
             self.gctrl.read_cfg()
 
         self.gpio_pins = self.gctrl.gpio_pins
+        print self.gpio_pins.items()
         self.form = {}
         self.html = []
 
@@ -294,6 +296,7 @@ class Web(object):
         elif self.form['send'] == "change":
             if self.form['mode'] == "sun":
                 self.gctrl.gpio_pins[self.form['gpio']].change_mode('sun')
+                self.gctrl.gpio_pins[self.form['gpio']].write_cfg()
             elif self.form['mode'] == "time":
                 self.gctrl.gpio_pins[self.form['gpio']].change_mode('time')
                 dow = []

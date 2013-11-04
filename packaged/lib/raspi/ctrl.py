@@ -18,7 +18,7 @@ class GpioCtrl(object):
         init gpio
         """
         self.opt = opt
-        self.gpio_cfg_path = "%s/etc/raspigpioctrl/" % opt['-r']
+        self.gpio_cfg_path = opt['-c']
         self.gpio_pins = {}
 
     def run_cron(self):
@@ -146,11 +146,13 @@ class GpioCtrl(object):
         """
         read cfg file and update gpio_pins dict
         """
-        path = "%s/%s" % (PREFIX, self.gpio_cfg_path)
-        for root, dirs, files in os.walk(path):
+        for root, dirs, files in os.walk(self.gpio_cfg_path):
             for file_path in files:
+                if not file_path.endswith('cfg'):
+                    continue
                 if file_path.startswith("main"):
-                    pin = MainPin(self.opt, "%s/%s" % (root, file_path))
+                    fpath = "%s/%s" % (root, file_path)
+                    pin = MainPin(self.opt, fpath)
                 else:
                     pin = SlavePin(self.opt, "%s/%s" % (root, file_path))
                 pin.init_pin(force_init)

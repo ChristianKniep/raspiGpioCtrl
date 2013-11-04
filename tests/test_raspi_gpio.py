@@ -12,14 +12,15 @@ if not PREFIX.endswith("/"):
 class TestRaspiGpio(unittest.TestCase):
     def setUp(self):
         self.opt = {
-            "-r":"packaged",
+            "-r": "packaged",
+            '-c': "%s/tests/misc/test_raspi_gpio/test0/etc/raspigpioctrl/" % PREFIX,
             "--dry-run":True,
             '--test':False,
             "-d":'1',
         }
         self.skip_keys = ['opt']
         self.def_items = {
-            'gpio_cfg_path': "%s/etc/raspigpioctrl/" % (self.opt['-r']),
+            'gpio_cfg_path': "%s/tests/misc/test_raspi_gpio/test0/etc/raspigpioctrl/" % PREFIX,
             'gpio_pins': {},
         }
 

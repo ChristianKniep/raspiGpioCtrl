@@ -123,6 +123,7 @@ class TestRaspiWeb(unittest.TestCase):
         opt = self.opt.copy()
         opt['-c'] = "%s/tests/misc/test_raspi_web/test0/etc/raspigpioctrl/" % PREFIX
         test1_file = "%s/pin1.cfg" % opt['-c']
+        shutil.copyfile("%s.orig" % test1_file, test1_file)
         pin1 = SlavePin(opt, test1_file)
         pin1.init_pin(True)
         
@@ -220,10 +221,9 @@ class TestRaspiWeb(unittest.TestCase):
         exp = ""
 
         opt = self.opt.copy()
-        src = "%s/tests/misc/test_raspi_web/test0/etc/raspigpioctrl/" % PREFIX
-        opt['-c'] = "%s/tests/misc/test_raspi_web/test0/3/etc/raspigpioctrl/" % PREFIX
-        test1_src = "%s/pin1.cfg" % src
+        opt['-c'] = "%s/tests/misc/test_raspi_web/test0/etc/raspigpioctrl/" % PREFIX
         test1_file = "%s/pin1.cfg" % opt['-c']
+        shutil.copyfile("%s.orig" % test1_file, test1_file)
         pin1 = SlavePin(opt, test1_file)
         pin1.init_pin(True)
         pin1.set_cfg({'dow':'Mon,Tue,Wed,Thu,Fri,Sat,Sun'})
@@ -232,7 +232,6 @@ class TestRaspiWeb(unittest.TestCase):
         web.add_pin(pin1)
         web.update_slave(send='change', mode='sun', gpio='1')
         self.assertTrue(web.gctrl.gpio_pins['1'].get_json()['mode'] == 'sun')
-        shutil.copyfile(test1_src, test1_file)
 
     def test1_0_main(self):
         """

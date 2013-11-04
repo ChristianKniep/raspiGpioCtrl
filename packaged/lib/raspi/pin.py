@@ -335,6 +335,7 @@ class SlavePin(BasePin):
             if key == "pin_nr":
                 self.pin_base = "%s/gpio%s" % (self.gpio_base, self.pin_nr)
                 self.init_pin()
+        self.write_cfg()
 
     def change_mode(self, mode_str):
         """
@@ -415,7 +416,7 @@ class SlavePin(BasePin):
             if self.test_state == '1':
                 return True
             if self.mode not in ('man'):
-            	return True
+                return True
         return False
 
     def trigger_on(self, dt=None):
@@ -482,6 +483,7 @@ class MainPin(BasePin):
             self.mode = mode_str
         else:
             raise ValueError("%s is no valid mode" % mode_str)
+        self.write_cfg()
 
     def set_cfg(self, cfg_dic, force=True):
         """
