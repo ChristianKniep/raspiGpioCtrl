@@ -160,7 +160,8 @@ class BasePin(object):
             # if the file exists we get the md5
             crypt = self.get_md5()
             if self.crypt != crypt:
-                raise IOError("cfg file changed on disk! (new: %s)" % crypt)
+                #raise IOError("cfg file changed on disk! (new: %s)" % crypt)
+                print "cfg file changed on disk! (new: %s)" % crypt
 
         cfg = ConfigParser()
         sec = 'global'
@@ -430,7 +431,7 @@ class SlavePin(BasePin):
         if on <= dt and off > dt and self.state == '0':
             if self.test_state == '1':
                 return True
-            if self.mode not in (get_mode_id('man'), get_mode_id('off')):
+            if self.mode not in (get_mode_id('man'), get_mode_id('off'), 'man', 'off'):
                 return True
         return False
 
